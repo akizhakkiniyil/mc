@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infographic: Intelligent Access Governance with Spring AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .flow-arrow::after {
+            content: '→';
+            font-size: 2.5rem;
+            line-height: 1;
+            color: #90E0EF;
+        }
+        .flow-arrow-down::after {
+            content: '↓';
+            font-size: 2.5rem;
+            line-height: 1;
+            color: #90E0EF;
+        }
+    </style>
+</head>
+<body class="bg-[#03045E]">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12 md:mb-16">
+            <h1 class="text-4xl md:text-6xl font-black text-white uppercase tracking-wider">Intelligent Access Governance</h1>
+            <p class="text-xl md:text-2xl text-[#90E0EF] mt-2 font-semibold">Revolutionizing IT Security with Spring AI & MCP</p>
+        </header>
+
+        <main>
+            
+            <section id="challenge" class="mb-16">
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                    <div class="md:col-span-1 text-center">
+                        <div class="text-7xl md:text-9xl font-black text-[#00B4D8] animate-pulse">75%</div>
+                        <p class="text-white text-lg mt-2 font-semibold">of data breaches involve abuse of privileged access credentials.</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h2 class="text-3xl font-bold text-white mb-4">The Challenge: Outdated & Risky Manual Provisioning</h2>
+                        <p class="text-[#CAF0F8] text-base md:text-lg">
+                            Traditional access control is slow, inconsistent, and prone to human error. Granting new hires the right permissions can take days, while over-privileged accounts create significant security vulnerabilities. This manual process fails to scale and cannot adapt to dynamic organizational changes, leaving critical assets exposed.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="architecture" class="mb-16">
+                 <h2 class="text-3xl font-bold text-white mb-6 text-center">The Solution: A Decoupled AI Architecture</h2>
+                 <p class="text-[#CAF0F8] text-lg text-center max-w-3xl mx-auto mb-8">
+                    Our solution uses the Model Context Protocol (MCP) to create a secure, scalable system. The MCP Client orchestrates the AI, while the MCP Server safely exposes business logic as callable tools, ensuring the LLM has grounded, real-time context without direct data access.
+                </p>
+
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 flex-wrap">
+                        
+                        <div class="text-center p-4 bg-[#0077B6] rounded-lg shadow-lg">
+                            <p class="text-2xl font-bold text-white">👤 User Request</p>
+                            <p class="text-[#CAF0F8]">e.g., "Recommend access for a new hire"</p>
+                        </div>
+
+                        <div class="flow-arrow hidden md:block"></div>
+                        <div class="flow-arrow-down block md:hidden"></div>
+                        
+                        <div class="text-center p-4 bg-[#0077B6] rounded-lg shadow-lg w-full md:w-auto">
+                            <p class="text-2xl font-bold text-white">🤖 MCP Client (Spring Boot)</p>
+                            <p class="text-[#CAF0F8]">Orchestrates AI & discovers tools</p>
+                        </div>
+                        
+                        <div class="w-full flex flex-col md:flex-row items-center justify-around gap-4 mt-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flow-arrow hidden md:block rotate-45 -translate-y-4"></div>
+                                <div class="flow-arrow-down block md:hidden"></div>
+                                <div class="text-center p-4 bg-[#00B4D8] rounded-lg shadow-lg">
+                                    <p class="text-xl font-bold text-white">🧠 External LLM</p>
+                                    <p class="text-[#CAF0F8]">Reasons & Decides</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flow-arrow hidden md:block -rotate-45 -translate-y-4"></div>
+                                <div class="flow-arrow-down block md:hidden"></div>
+                                <div class="text-center p-4 bg-[#00B4D8] rounded-lg shadow-lg">
+                                    <p class="text-xl font-bold text-white">🛠️ MCP Server (Spring Boot)</p>
+                                    <p class="text-[#CAF0F8]">Executes Tools</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="features" class="mb-16">
+                <h2 class="text-3xl font-bold text-white mb-8 text-center">Core AI-Powered Capabilities</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 text-center">
+                        <div class="text-5xl mb-4">💡</div>
+                        <h3 class="text-xl font-bold text-white mb-2">Access Recommendations</h3>
+                        <p class="text-[#CAF0F8]">Suggests group memberships for new or transitioning employees based on peer and role analysis.</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 text-center">
+                        <div class="text-5xl mb-4">🔬</div>
+                        <h3 class="text-xl font-bold text-white mb-2">Anomaly Detection</h3>
+                        <p class="text-[#CAF0F8]">Flags employees with unusual access patterns compared to their role or department peers.</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 text-center">
+                        <div class="text-5xl mb-4">🤖</div>
+                        <h3 class="text-xl font-bold text-white mb-2">Chatbot Assistant</h3>
+                        <p class="text-[#CAF0F8]">Allows IT and HR to ask plain-language questions like, "Should Jane have admin rights?"</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 text-center">
+                        <div class="text-5xl mb-4">📈</div>
+                        <h3 class="text-xl font-bold text-white mb-2">Policy Drift Detection</h3>
+                        <p class="text-[#CAF0F8]">Tracks how group memberships change over time against a defined baseline policy.</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 text-center">
+                        <div class="text-5xl mb-4">🔍</div>
+                        <h3 class="text-xl font-bold text-white mb-2">Automated Access Reviews</h3>
+                        <p class="text-[#CAF0F8]">Generates summaries for managers, highlighting access that deviates from team norms.</p>
+                    </div>
+                     <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6 text-center">
+                        <div class="text-5xl mb-4">🧩</div>
+                        <h3 class="text-xl font-bold text-white mb-2">Explainable AI (XAI)</h3>
+                        <p class="text-[#CAF0F8]">Provides clear, simple reasons for why a specific recommendation or flag was generated.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="analysis" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6">
+                    <h3 class="text-2xl font-bold text-white mb-1 text-center">AI-Driven Recommendations</h3>
+                    <p class="text-center text-[#CAF0F8] mb-4">The AI analyzes multiple factors to formulate its suggestions, ensuring a holistic and context-aware recommendation.</p>
+                    <div class="chart-container h-72 md:h-80">
+                        <canvas id="recommendationFactorsChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6">
+                    <h3 class="text-2xl font-bold text-white mb-1 text-center">Suggested Groups for New Hire</h3>
+                    <p class="text-center text-[#CAF0F8] mb-4">Groups are ranked by a confidence score, helping administrators prioritize and approve access quickly.</p>
+                    <div class="chart-container h-72 md:h-80">
+                        <canvas id="confidenceScoreChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="trends" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+                 <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6">
+                    <h3 class="text-2xl font-bold text-white mb-1 text-center">Policy Drift Over Time</h3>
+                    <p class="text-center text-[#CAF0F8] mb-4">This tracks the percentage of access rights that have deviated from the established baseline, signaling potential policy erosion.</p>
+                    <div class="chart-container h-72 md:h-80">
+                        <canvas id="policyDriftChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl p-6">
+                    <h3 class="text-2xl font-bold text-white mb-1 text-center">Access Anomaly Detection</h3>
+                    <p class="text-center text-[#CAF0F8] mb-4">The system identifies outliers by comparing an employee's total permissions against their role's risk score. Larger circles indicate higher-risk employees.</p>
+                    <div class="chart-container h-72 md:h-80">
+                        <canvas id="anomalyDetectionChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="stack" class="text-center">
+                 <h2 class="text-3xl font-bold text-white mb-8 text-center">Powered by a Modern Tech Stack</h2>
+                 <div class="flex justify-center items-center gap-8 md:gap-12 flex-wrap">
+                     <div class="text-center">
+                        <div class="text-6xl">🍃</div>
+                        <p class="text-white font-semibold mt-2">Spring Boot</p>
+                     </div>
+                     <div class="text-center">
+                        <div class="text-6xl">🐳</div>
+                        <p class="text-white font-semibold mt-2">Docker</p>
+                     </div>
+                     <div class="text-center">
+                        <div class="text-6xl">☕</div>
+                        <p class="text-white font-semibold mt-2">Java</p>
+                     </div>
+                      <div class="text-center">
+                        <div class="text-6xl">🧠</div>
+                        <p class="text-white font-semibold mt-2">OpenAI</p>
+                     </div>
+                 </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const brilliantBlues = {
+                primary: '#0077B6',
+                secondary: '#00B4D8',
+                accent: '#90E0EF',
+                light: '#CAF0F8',
+                dark: '#03045E'
+            };
+
+            const textColor = '#FFFFFF';
+            const gridColor = 'rgba(255, 255, 255, 0.2)';
+
+            function wrapLabel(str, max_width) {
+                if (typeof str !== 'string' || str.length <= max_width) {
+                    return str;
+                }
+                const words = str.split(' ');
+                const lines = [];
+                let current_line = '';
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    const width = current_line.length > 0 ? current_line.length + word.length + 1 : word.length;
+                    if (width > max_width) {
+                        lines.push(current_line);
+                        current_line = word;
+                    } else {
+                        current_line += (current_line.length > 0 ? ' ' : '') + word;
+                    }
+                }
+                lines.push(current_line);
+                return lines;
+            }
+
+            const chartTooltipOptions = {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: textColor
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                const item = tooltipItems[0];
+                                let label = item.chart.data.labels[item.dataIndex];
+                                return Array.isArray(label) ? label.join(' ') : label;
+                            }
+                        }
+                    }
+                }
+            };
+            
+            new Chart(document.getElementById('recommendationFactorsChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Peer Group Analysis', 'Line Manager Profile', 'Role-Based Templates', 'Department Standards'],
+                    datasets: [{
+                        label: 'Recommendation Weight',
+                        data: [45, 25, 20, 10],
+                        backgroundColor: [brilliantBlues.secondary, brilliantBlues.accent, '#48cae4', '#ade8f4'],
+                        borderColor: brilliantBlues.dark,
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: chartTooltipOptions.plugins
+                }
+            });
+            
+            const confidenceLabels = [
+                'All-Hands Distribution List', 'Engineering General', 
+                'Project-X Read-Only', 'Corp VPN Access', 'Code-Repo Contributors'
+            ].map(label => wrapLabel(label, 16));
+
+            new Chart(document.getElementById('confidenceScoreChart'), {
+                type: 'bar',
+                data: {
+                    labels: confidenceLabels,
+                    datasets: [{
+                        label: 'Confidence Score',
+                        data: [98, 95, 88, 85, 76],
+                        backgroundColor: brilliantBlues.secondary,
+                        borderColor: brilliantBlues.primary,
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: { color: textColor }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: textColor }
+                        }
+                    },
+                    plugins: chartTooltipOptions.plugins
+                }
+            });
+
+            new Chart(document.getElementById('policyDriftChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Q1', 'Q2', 'Q3', 'Q4', 'Current'],
+                    datasets: [{
+                        label: 'Policy Drift (%)',
+                        data: [1.2, 1.5, 2.1, 2.8, 3.5],
+                        fill: true,
+                        backgroundColor: 'rgba(0, 180, 216, 0.2)',
+                        borderColor: brilliantBlues.secondary,
+                        tension: 0.4,
+                        pointBackgroundColor: brilliantBlues.light,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: textColor } 
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: gridColor },
+                            ticks: { 
+                                color: textColor,
+                                callback: function(value) { return value + '%' }
+                            }
+                        }
+                    },
+                    plugins: chartTooltipOptions.plugins
+                }
+            });
+
+            new Chart(document.getElementById('anomalyDetectionChart'), {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Employee Access Profile',
+                        data: [
+                            {x: 20, y: 15, r: 5}, {x: 22, y: 18, r: 6},
+                            {x: 80, y: 75, r: 18}, {x: 40, y: 35, r: 8},
+                            {x: 55, y: 60, r: 12}, {x: 30, y: 25, r: 7},
+                            {x: 70, y: 68, r: 15}
+                        ],
+                        backgroundColor: 'rgba(144, 224, 239, 0.7)',
+                        borderColor: brilliantBlues.accent,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Role Risk Score', color: textColor },
+                            grid: { color: gridColor },
+                            ticks: { color: textColor }
+                        },
+                        y: {
+                            title: { display: true, text: 'Permission Count', color: textColor },
+                            grid: { color: gridColor },
+                            ticks: { color: textColor }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Employee ID: ${Math.floor(Math.random() * 1000) + 100}, Risk: ${context.raw.x}, Permissions: ${context.raw.y}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
