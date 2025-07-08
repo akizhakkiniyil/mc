@@ -1,0 +1,82 @@
+Frequently Asked Questions (FAQ)
+This FAQ section addresses key questions about the architecture, technology stack, and design patterns used in the AI-Powered Access Governance Co-Pilot solution.
+
+Q1: Why was the Spring AI Model Context Protocol (MCP) chosen for this solution?
+
+A: The Model Context Protocol (MCP) is central to the architecture because it enables a powerful and reusable "Enterprise AI Agent" pattern.
+
+Instead of building a monolithic application, we've decoupled the AI's "brain" (the LLM) from its "body" (the server with data and tools). The mcp-server acts as a centralized, reusable toolkit for the entire enterprise.
+
+The key benefits of this approach are:
+
+Reusability: The mcp-server, with its valuable data connections and curated business logic (like detectAnomalousAccess), is not tied to a single UI. The same server can be used by other clients in the future—such as a Slack bot, a mobile app, or an automated auditing workflow—without any changes.
+
+Standardization: MCP provides a standard way for AI models to discover and interact with tools. This avoids creating proprietary, brittle integrations between the AI and the business logic.
+
+Scalability & Maintainability: The concerns are separated. The UI team can evolve the mcp-client independently, while the data and AI team can enhance the tools and data sources in the mcp-server. This makes the entire system easier to manage and scale.
+
+In short, MCP elevates the project from a simple AI-powered web app to a foundational component of a scalable, enterprise-wide AI strategy.
+
+Q2: Why use Azure OpenAI and a Java/Spring stack instead of a more common Python-based AI stack?
+
+A: While Python is excellent for AI model training and data science, this project's focus is on integrating AI into a robust, secure, and maintainable enterprise application. The Java/Spring ecosystem with Azure OpenAI was chosen for several strategic reasons:
+
+Enterprise Integration: Most large organizations have a significant investment in the Java ecosystem. This solution leverages existing developer skills, infrastructure, and best practices for building enterprise-grade applications.
+
+Robustness of Spring Framework: The Spring Framework provides mature, battle-tested libraries for critical enterprise needs:
+
+Security: Spring Security offers comprehensive protection and seamless integration with enterprise identity providers like Microsoft Entra ID for both user authentication (OAuth2 Login) and service-to-service security (Client Credentials).
+
+Data Access: Spring Data JPA simplifies database interactions, making it easy to switch from an H2 prototype to a production database like PostgreSQL or Azure SQL.
+
+Scalability: Spring Boot and Spring WebFlux are designed for building high-performance, scalable microservices.
+
+Azure's Enterprise-Grade Services: Using Azure OpenAI keeps the AI component within the same secure and compliant cloud ecosystem that many enterprises already trust. It provides benefits like private networking, managed infrastructure, and integration with other Azure services.
+
+Developer Velocity: For a team of Java developers, building the entire application in a single language (using Vaadin for the UI) is significantly faster than managing a polyglot stack with separate Java backend and Python AI service teams, especially in a time-constrained hackathon environment.
+
+Essentially, this technology choice prioritizes building a secure, scalable, and maintainable enterprise product that uses AI, rather than just building a standalone AI model.
+
+Q3: What is the purpose of having two separate applications, mcp-server and mcp-client?
+
+A: This separation is a core principle of the microservices architecture and the "Enterprise AI Agent" pattern.
+
+The mcp-server is the intelligence core. Its only job is to manage data and expose business logic as AI-discoverable tools. It has no UI and is designed to be a headless, reusable service.
+
+The mcp-client is the user interaction layer. Its job is to provide a user interface (in this case, a Vaadin web app) and handle user authentication. It is a consumer of the tools provided by the mcp-server.
+
+This separation ensures that the core AI capabilities can be developed and scaled independently of how users interact with them.
+
+Q4: Why was Vaadin chosen for the user interface?
+
+A: Vaadin was selected primarily for developer velocity and its robust feature set, which are ideal for a hackathon.
+
+Full-Stack Java: It allows the entire application, from the database to the UI pixels, to be written in Java. This eliminates the need for a separate frontend team or expertise in JavaScript frameworks like React or Angular.
+
+Seamless Security Integration: Vaadin integrates deeply with Spring Security, making it straightforward to secure the application with enterprise-grade authentication like Azure AD.
+
+Built-in Server Push: The real-time streaming of the AI's response is a critical feature. Vaadin's @Push annotation makes this complex capability trivial to implement, enabling the server to push updates to the browser in real-time without manual WebSocket or SSE handling on the frontend.
+
+Q5: What is Tree-of-Thoughts (ToT) and why is it included?
+
+A: Tree-of-Thoughts (ToT) is an advanced prompting technique used to improve an AI's reasoning on complex problems. Instead of a single "chain of thought," the ToT pattern guides the LLM to:
+
+Decompose a complex problem into smaller steps.
+
+Generate multiple possible "thoughts" or approaches for each step.
+
+Evaluate its own thoughts to determine the most promising path.
+
+Synthesize a final, well-reasoned answer based on the best path.
+
+It was included in this solution as a high-level tool (investigate) to demonstrate how to handle queries that are too complex for a single tool call. This showcases a more sophisticated, programmatic approach to AI orchestration, moving beyond simple Q&A to multi-step problem-solving.
+
+Q6: Is this solution ready for a production environment?
+
+A: The solution is a powerful and feature-rich prototype, perfectly suited for a hackathon. The architecture itself is scalable and production-ready. However, for a true production deployment, the following components would need to be evolved:
+
+Database: The H2 in-memory database should be replaced with a robust, persistent database like PostgreSQL, Azure SQL, or Cosmos DB.
+
+ML Models: The placeholder logic in the AI tools (e.g., for anomaly detection) should be replaced with actual trained machine learning models or more sophisticated statistical analysis.
+
+Deployment: The applications should be containerized (e.g., with Docker) and deployed to a scalable platform like Azure Kubernetes Service (AKS) or Azure App Service, with proper CI/CD pipelines.
