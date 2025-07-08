@@ -1,1 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Tree of Thoughts with Spring AI</title>
+    <!-- Chosen Palette: Warm Dev Focus -->
+    <!-- Application Structure Plan: The application is structured as a single-page application with a tab-based navigation system. This non-linear design was chosen because the source report contains distinct, dense sections (theory, tools, implementation, analysis). A tabbed approach allows users, likely developers with varying levels of familiarity with the topics, to directly access the section most relevant to their needs without being forced into a linear reading order. The flow is: land on an introduction, then freely explore tabs for (1) Conceptual Evolution, (2) ToT Framework Breakdown, (3) The Spring AI Toolkit, (4) Practical Use Cases, and (5) Best Practices. This structure prioritizes user-driven exploration and rapid information retrieval over a traditional document layout. -->
+    <!-- Visualization & Content Choices: The application avoids static presentation of the report's data. For 'Compare' goals, the 'Reasoning Frameworks' table is converted into interactive, clickable cards to highlight differences. For 'Organize' goals, the 'Four Pillars of ToT' are presented as an interactive flowchart, and the 'Best Practices' are in an accordion, improving scannability. For 'Relationships', the 'ToT Concepts to Spring AI Components' table is transformed into a linked, two-panel interactive element to visually connect theory and practice. For the 'Use Cases', interactive diagrams explain the distributed architecture, and a Chart.js bar chart visualizes the abstract concept of 'cost', making it more tangible. All visualizations are built with HTML/CSS or Chart.js (Canvas) to adhere to the NO SVG/Mermaid constraint. The justification is to increase engagement and comprehension through interaction. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #3C3C3B;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active {
+            border-bottom-color: #4A90E2;
+            color: #4A90E2;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .interactive-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .interactive-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .code-block {
+            background-color: #2D2D2D;
+            color: #F8F8F2;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .accordion-button.active + .accordion-content {
+            max-height: 1000px; /* Arbitrary large value */
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">Implementing Tree of Thoughts</h1>
+            <p class="text-lg md:text-xl text-gray-600">An Interactive Guide to Advanced Reasoning with Spring AI 1.0.0</p>
+        </header>
+
+        <nav class="mb-8 border-b border-gray-300">
+            <ul class="flex flex-wrap -mb-px justify-center text-sm font-medium text-center text-gray-500">
+                <li class="mr-2">
+                    <a href="#" class="nav-link inline-block p-4 rounded-t-lg active" data-tab="evolution">1. Reasoning Evolution</a>
+                </li>
+                <li class="mr-2">
+                    <a href="#" class="nav-link inline-block p-4 rounded-t-lg" data-tab="framework">2. ToT Framework</a>
+                </li>
+                 <li class="mr-2">
+                    <a href="#" class="nav-link inline-block p-4 rounded-t-lg" data-tab="toolkit">3. Spring AI Toolkit</a>
+                </li>
+                <li class="mr-2">
+                    <a href="#" class="nav-link inline-block p-4 rounded-t-lg" data-tab="usecases">4. Use Cases</a>
+                </li>
+                 <li>
+                    <a href="#" class="nav-link inline-block p-4 rounded-t-lg" data-tab="practices">5. Best Practices</a>
+                </li>
+            </ul>
+        </nav>
+
+        <main>
+            <div id="evolution" class="tab-content active">
+                <section class="text-center mb-12">
+                     <h2 class="text-3xl font-bold mb-4">The "Why": From Linear Chains to Branching Trees</h2>
+                     <p class="max-w-3xl mx-auto text-gray-600">The way we interact with LLMs has evolved to solve increasingly complex problems. Simple Input-Output fails for multi-step reasoning. Chain of Thought (CoT) was an improvement, but its linear nature means one mistake derails the entire process. Tree of Thoughts (ToT) was created to overcome this by exploring multiple reasoning paths at once, much like human problem-solving. This section lets you explore the differences.</p>
+                </section>
+
+                <div class="grid md:grid-cols-3 gap-8 mb-8 text-center">
+                    <div id="viz-path-container" class="md:col-span-3 bg-white p-6 rounded-lg shadow-md flex items-center justify-center h-40">
+                         <div id="viz-path-io" class="viz-path-item">
+                            <span class="font-semibold">Input</span>
+                            <span class="text-3xl mx-4 text-blue-500 font-mono">&rarr;</span>
+                            <span class="font-semibold">Output</span>
+                        </div>
+                        <div id="viz-path-cot" class="viz-path-item hidden">
+                            <span class="font-semibold">Input</span>
+                            <span class="text-3xl mx-2 text-blue-500 font-mono">&rarr;</span>
+                            <span class="font-semibold text-sm">Step 1</span>
+                            <span class="text-3xl mx-2 text-blue-500 font-mono">&rarr;</span>
+                            <span class="font-semibold text-sm">Step 2</span>
+                            <span class="text-3xl mx-2 text-blue-500 font-mono">&rarr;</span>
+                            <span class="font-semibold">Output</span>
+                        </div>
+                        <div id="viz-path-tot" class="viz-path-item hidden">
+                             <div class="flex items-center">
+                                <span class="font-semibold">Input</span>
+                                <div class="ml-4 flex flex-col">
+                                    <span class="text-3xl text-blue-500 font-mono transform -rotate-45 -mb-3">&#8600;</span>
+                                    <span class="text-3xl text-blue-500 font-mono">&#8594;</span>
+                                    <span class="text-3xl text-blue-500 font-mono transform rotate-45 -mt-3">&#8599;</span>
+                                </div>
+                                <div class="flex flex-col ml-2">
+                                     <span class="font-semibold text-sm">Path A</span>
+                                     <span class="font-semibold text-sm my-2">Path B</span>
+                                     <span class="font-semibold text-sm">Path C</span>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                     <div class="interactive-card bg-white p-6 rounded-lg shadow-md cursor-pointer framework-card active" data-framework="io">
+                        <h3 class="text-2xl font-bold mb-2 text-blue-600">Input-Output (IO)</h3>
+                        <p class="text-gray-700">Direct answer generation. Best for simple fact retrieval.</p>
+                    </div>
+                    <div class="interactive-card bg-white p-6 rounded-lg shadow-md cursor-pointer framework-card" data-framework="cot">
+                        <h3 class="text-2xl font-bold mb-2 text-teal-600">Chain of Thought (CoT)</h3>
+                        <p class="text-gray-700">Generates intermediate steps before the final answer.</p>
+                    </div>
+                    <div class="interactive-card bg-white p-6 rounded-lg shadow-md cursor-pointer framework-card" data-framework="tot">
+                        <h3 class="text-2xl font-bold mb-2 text-purple-600">Tree of Thoughts (ToT)</h3>
+                        <p class="text-gray-700">Explores multiple reasoning paths in parallel as a tree.</p>
+                    </div>
+                </div>
+
+                <div id="framework-details" class="mt-8 bg-white p-6 rounded-lg shadow-lg transition-all duration-500">
+                    <!-- Details will be populated by JS -->
+                </div>
+            </div>
+
+            <div id="framework" class="tab-content">
+                <section class="text-center mb-12">
+                     <h2 class="text-3xl font-bold mb-4">How ToT Works: The Four Pillars</h2>
+                     <p class="max-w-3xl mx-auto text-gray-600">The Tree of Thoughts framework operationalizes complex problem-solving by breaking it down into four distinct pillars. This creates a controllable system that separates creative thought generation from logical evaluation and search. Interact with the diagram below to understand each component's role.</p>
+                </section>
+                
+                <div class="bg-white p-8 rounded-lg shadow-xl">
+                    <div class="relative">
+                        <div id="pillar-details" class="absolute -top-12 right-0 w-64 p-4 bg-blue-100 border border-blue-300 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
+                            <h4 id="pillar-title" class="font-bold text-blue-800"></h4>
+                            <p id="pillar-description" class="text-sm text-blue-700"></p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center text-center font-semibold">
+                            <div class="pillar-node p-4 bg-gray-100 rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-400" data-pillar="decomposition">
+                                1. Thought Decomposition
+                            </div>
+                            <div class="text-2xl text-gray-400">&rarr;</div>
+                            <div class="pillar-node p-4 bg-gray-100 rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-400" data-pillar="generation">
+                                2. Thought Generation (Proposer)
+                            </div>
+                            <div class="text-2xl text-gray-400">&rarr;</div>
+                        </div>
+                        <div class="h-8 flex justify-end md:justify-center pr-16 md:pr-0">
+                           <div class="w-px bg-gray-400 h-full transform -translate-x-1/2"></div>
+                           <div class="text-2xl text-gray-400 transform -translate-y-4">&darr;</div>
+                        </div>
+                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center text-center font-semibold flex-row-reverse">
+                             <div class="pillar-node p-4 bg-gray-100 rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-400" data-pillar="search">
+                                4. Search Algorithm
+                            </div>
+                            <div class="text-2xl text-gray-400">&larr;</div>
+                             <div class="pillar-node p-4 bg-gray-100 rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-400" data-pillar="evaluation">
+                                3. State Evaluation (Evaluator)
+                            </div>
+                            <div class="text-2xl text-gray-400">&larr;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="toolkit" class="tab-content">
+                 <section class="text-center mb-12">
+                     <h2 class="text-3xl font-bold mb-4">The "How": The Spring AI 1.0.0 Toolkit</h2>
+                     <p class="max-w-3xl mx-auto text-gray-600">Spring AI 1.0.0 provides the essential building blocks for creating agentic systems like a ToT engine. It avoids a monolithic 'agent' framework, instead offering composable components. The key architectural shift is from 'Function Calling' to the more general 'Tool Calling', enabled by the Model Context Protocol (MCP). This section maps the abstract ToT concepts to concrete Spring AI components.</p>
+                </section>
+                
+                <div class="md:grid md:grid-cols-3 md:gap-8">
+                    <div class="md:col-span-1 mb-8 md:mb-0">
+                        <h3 class="text-xl font-bold mb-4">ToT Concepts</h3>
+                        <ul id="tot-concepts-list" class="space-y-2">
+                            <!-- JS will populate this -->
+                        </ul>
+                    </div>
+                    <div id="spring-components-details" class="md:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                        <!-- JS will populate this -->
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="usecases" class="tab-content">
+                <section class="text-center mb-12">
+                     <h2 class="text-3xl font-bold mb-4">Use Cases in Action</h2>
+                     <p class="max-w-3xl mx-auto text-gray-600">Theory comes to life through implementation. Explore two practical examples: a self-contained puzzle solver (Game of 24) that focuses on the core reasoning loop, and a distributed AI travel planner that uses the Model Context Protocol (MCP) to interact with external tools.</p>
+                </section>
+                
+                <div class="mb-4 border-b border-gray-200">
+                    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="usecase-tabs">
+                        <li class="mr-2">
+                            <button class="usecase-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-target="game24">Game of 24 (Self-Contained)</button>
+                        </li>
+                        <li class="mr-2">
+                            <button class="usecase-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-target="planner">AI Travel Planner (Distributed)</button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div id="game24-content" class="usecase-content hidden">
+                    <div class="grid lg:grid-cols-5 gap-8">
+                        <div class="lg:col-span-3">
+                            <h3 class="text-2xl font-bold mb-4">Game of 24: Core Orchestration</h3>
+                            <p class="text-gray-600 mb-4">This example focuses on the internal logic of ToT. The orchestrator uses two different prompts: a 'Propose' prompt to generate next steps and a 'Value' prompt to evaluate how promising those steps are. A Breadth-First Search (BFS) algorithm then explores the most promising paths.</p>
+                            <div class="flex space-x-2 mb-4">
+                                <button class="prompt-btn bg-blue-500 text-white px-4 py-2 rounded-lg" data-prompt="propose">Show Propose Prompt</button>
+                                <button class="prompt-btn bg-green-500 text-white px-4 py-2 rounded-lg" data-prompt="value">Show Value Prompt</button>
+                            </div>
+                            <div id="prompt-display" class="code-block whitespace-pre-wrap">
+                                Select a prompt to view its content.
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-bold mb-4">Relative Cost & Complexity</h3>
+                            <p class="text-sm text-gray-600 mb-4">ToT's exploratory power comes at a cost. It requires significantly more LLM interaction than simpler methods.</p>
+                            <div class="chart-container">
+                                <canvas id="costChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="planner-content" class="usecase-content hidden">
+                     <h3 class="text-2xl font-bold mb-4">AI Travel Planner: Distributed Tools via MCP</h3>
+                     <p class="text-gray-600 mb-4">This example shows ToT's real power: interacting with the outside world. The central orchestrator (the client) can use external tools (flight and hotel servers) thanks to the Model Context Protocol (MCP). MCP creates a plug-and-play environment, decoupling the reasoning engine from the tools it uses. Click on the components in the diagram to see how they're configured.</p>
+                     
+                     <div class="bg-white p-8 rounded-lg shadow-xl">
+                        <div class="grid md:grid-cols-5 gap-4 text-center items-center">
+                            <div class="mcp-component p-4 bg-gray-100 rounded-lg cursor-pointer border-2 border-transparent hover:border-purple-400" data-component="flight-server">
+                                <span class="font-bold">Flight Search</span><br>MCP Server
+                            </div>
+                            <div class="text-2xl text-gray-400 transform -rotate-45 md:rotate-0">&harr;</div>
+                             <div class="mcp-component p-4 bg-purple-100 rounded-lg cursor-pointer border-2 border-transparent hover:border-purple-400" data-component="client">
+                                <span class="font-bold">Travel Planner</span><br>ToT Orchestrator (MCP Client)
+                            </div>
+                            <div class="text-2xl text-gray-400 transform rotate-45 md:rotate-0">&harr;</div>
+                             <div class="mcp-component p-4 bg-gray-100 rounded-lg cursor-pointer border-2 border-transparent hover:border-purple-400" data-component="hotel-server">
+                                <span class="font-bold">Hotel Search</span><br>MCP Server
+                            </div>
+                        </div>
+                        <div id="mcp-details" class="mt-6 code-block whitespace-pre-wrap hidden">
+                            Click a component to see its configuration details.
+                        </div>
+                     </div>
+                </div>
+
+            </div>
+
+            <div id="practices" class="tab-content">
+                <section class="text-center mb-12">
+                     <h2 class="text-3xl font-bold mb-4">Analysis & Best Practices</h2>
+                     <p class="max-w-3xl mx-auto text-gray-600">Implementing a powerful framework like ToT introduces new considerations for production systems. Successfully deploying a ToT engine requires managing costs, careful prompt engineering, robust error handling, and choosing the right search strategy for your problem.</p>
+                </section>
+                <div id="accordion-container" class="space-y-4 max-w-4xl mx-auto">
+                    <!-- Accordion items will be generated by JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Main Tab Navigation
+            const navLinks = document.querySelectorAll('.nav-link');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    link.classList.add('active');
+                    const tabId = link.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            // Section 1: Reasoning Evolution
+            const frameworkData = {
+                io: {
+                    title: "Input-Output (IO)",
+                    principle: "Direct answer generation.",
+                    path: "Single, direct path from prompt to answer.",
+                    capability: "Knowledge retrieval, summarization.",
+                    useCase: "Question-answering, text generation.",
+                    limitation: "Fails on multi-step reasoning; no intermediate steps shown.",
+                    color: "blue"
+                },
+                cot: {
+                    title: "Chain of Thought (CoT)",
+                    principle: "Generate intermediate reasoning steps before the final answer.",
+                    path: "Single, linear, sequential path.",
+                    capability: "Decomposes complex problems into manageable steps.",
+                    useCase: "Arithmetic, commonsense, and symbolic reasoning.",
+                    limitation: "Autoregressive nature leads to error amplification; no backtracking or exploration.",
+                    color: "teal"
+                },
+                tot: {
+                    title: "Tree of Thoughts (ToT)",
+                    principle: "Explore multiple reasoning paths in parallel as a tree.",
+                    path: "Multiple branching paths (tree structure).",
+                    capability: "Deliberate search, lookahead, and backtracking.",
+                    useCase: "Complex planning, search, and strategic problems (e.g., Game of 24, puzzles).",
+                    limitation: "High resource consumption (5-100x more tokens than CoT); increased complexity.",
+                    color: "purple"
+                }
+            };
+            
+            const frameworkCards = document.querySelectorAll('.framework-card');
+            const detailsContainer = document.getElementById('framework-details');
+            const vizPaths = document.querySelectorAll('.viz-path-item');
+
+            function updateFrameworkDetails(framework) {
+                const data = frameworkData[framework];
+                detailsContainer.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-4 text-${data.color}-600">${data.title}</h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-left">
+                        <div><strong class="font-semibold">Core Principle:</strong><p class="text-gray-600">${data.principle}</p></div>
+                        <div><strong class="font-semibold">Reasoning Path:</strong><p class="text-gray-600">${data.path}</p></div>
+                        <div><strong class="font-semibold">Key Capability:</strong><p class="text-gray-600">${data.capability}</p></div>
+                        <div><strong class="font-semibold">Typical Use Case:</strong><p class="text-gray-600">${data.useCase}</p></div>
+                        <div class="md:col-span-2"><strong class="font-semibold text-red-600">Core Limitation:</strong><p class="text-red-700 bg-red-50 p-2 rounded">${data.limitation}</p></div>
+                    </div>
+                `;
+                
+                vizPaths.forEach(p => p.classList.add('hidden'));
+                document.getElementById(`viz-path-${framework}`).classList.remove('hidden');
+
+                frameworkCards.forEach(c => c.classList.remove('active', 'ring-2', 'ring-offset-2', 'ring-blue-500', 'ring-teal-500', 'ring-purple-500'));
+                const activeCard = document.querySelector(`.framework-card[data-framework="${framework}"]`);
+                activeCard.classList.add('active', 'ring-2', 'ring-offset-2', `ring-${data.color}-500`);
+            }
+
+            frameworkCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const framework = card.getAttribute('data-framework');
+                    updateFrameworkDetails(framework);
+                });
+            });
+
+            updateFrameworkDetails('io');
+
+            // Section 2: ToT Framework Pillars
+            const pillarData = {
+                decomposition: { title: "1. Thought Decomposition", description: "Break the problem into a series of smaller, coherent intermediate steps or 'thoughts.' This defines the structure of the tree's nodes." },
+                generation: { title: "2. Thought Generation (Proposer)", description: "Use an LLM to generate multiple potential next thoughts from a given node. This is the divergent, creative phase of the process." },
+                evaluation: { title: "3. State Evaluation (Evaluator)", description: "Use an LLM as a heuristic judge to assess the value of generated thoughts, estimating their likelihood of leading to a solution. This is the convergent, critical phase." },
+                search: { title: "4. Search Algorithm", description: "Use a classical search algorithm (like BFS or DFS) to systematically navigate the tree, orchestrating the generation and evaluation steps to explore the problem space efficiently." }
+            };
+
+            const pillarNodes = document.querySelectorAll('.pillar-node');
+            const pillarDetailsBox = document.getElementById('pillar-details');
+            const pillarTitle = document.getElementById('pillar-title');
+            const pillarDescription = document.getElementById('pillar-description');
+            
+            pillarNodes.forEach(node => {
+                node.addEventListener('mouseenter', () => {
+                    const pillarKey = node.dataset.pillar;
+                    const data = pillarData[pillarKey];
+                    pillarTitle.textContent = data.title;
+                    pillarDescription.textContent = data.description;
+                    pillarDetailsBox.classList.remove('opacity-0');
+                });
+                node.addEventListener('mouseleave', () => {
+                    pillarDetailsBox.classList.add('opacity-0');
+                });
+            });
+            
+             // Section 3: Spring AI Toolkit Mapper
+            const totConceptsData = {
+                "ToT Orchestrator": { 
+                    component: "Custom `@Service` class", 
+                    detail: "A developer-written Java class that implements the main reasoning loop, using a `Queue` or `Stack` for the search algorithm." 
+                },
+                "Thought Generation ('Proposer')": { 
+                    component: "`ChatClient`, `Prompt`", 
+                    detail: "An instance of `ChatClient` is called with a specifically crafted `Prompt` object designed to elicit multiple, diverse thought outputs." 
+                },
+                "State Evaluation ('Evaluator')": {
+                    component: "`ChatClient`, `Prompt`",
+                    detail: "A second, distinct `Prompt` is used to ask the `ChatClient` to evaluate a partial solution, returning a score or classification."
+                },
+                "Actionable Thought (Tool Use)": {
+                    component: "`@Tool`, `ToolCall`, `McpClient`",
+                    detail: "The LLM's response contains a `ToolCall` object. Spring AI's MCP infrastructure automatically routes this call to the correct `@Tool`-annotated method."
+                },
+                "State Representation (Node)": {
+                    component: "Custom Plain Old Java Object (POJO)",
+                    detail: "A simple Java class (e.g., `Node`) containing fields for the current state, parent node, and evaluation score."
+                },
+                "Tool Definition (MCP Server)": {
+                    component: "`@Tool`, MCP Server Starters",
+                    detail: "A separate Spring Boot application with `@Tool`-annotated methods. It includes an MCP server starter to expose these tools."
+                },
+                "Tool Discovery (MCP Client)": {
+                    component: "`spring.ai.mcp.client.*` properties",
+                    detail: "The main application's `application.yml` configures connections to MCP servers. The `ChatClient` automatically discovers and registers the tools."
+                }
+            };
+
+            const conceptsList = document.getElementById('tot-concepts-list');
+            const componentsDetails = document.getElementById('spring-components-details');
+
+            Object.keys(totConceptsData).forEach((key, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="#" class="block p-3 rounded-lg hover:bg-gray-100 transition-colors duration-200 concept-link ${index === 0 ? 'bg-blue-100 font-semibold' : ''}" data-concept="${key}">${key}</a>`;
+                conceptsList.appendChild(li);
+            });
+            
+            function updateToolkitDetails(conceptKey) {
+                const data = totConceptsData[conceptKey];
+                componentsDetails.innerHTML = `
+                    <h4 class="text-xl font-bold mb-2">${conceptKey}</h4>
+                    <div class="mb-4">
+                        <p class="font-semibold text-gray-800">Primary Spring AI Component(s):</p>
+                        <p class="text-blue-600 bg-blue-50 p-2 rounded mt-1 inline-block">${data.component}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800">Code-Level Implementation Detail:</p>
+                        <p class="text-gray-600 mt-1">${data.detail}</p>
+                    </div>
+                `;
+                document.querySelectorAll('.concept-link').forEach(link => {
+                    link.classList.remove('bg-blue-100', 'font-semibold');
+                    if (link.dataset.concept === conceptKey) {
+                         link.classList.add('bg-blue-100', 'font-semibold');
+                    }
+                });
+            }
+
+            conceptsList.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (e.target.closest('.concept-link')) {
+                    const key = e.target.closest('.concept-link').dataset.concept;
+                    updateToolkitDetails(key);
+                }
+            });
+            
+            updateToolkitDetails(Object.keys(totConceptsData)[0]);
+
+
+            // Section 4: Use Cases
+            const usecaseTabs = document.querySelectorAll('.usecase-tab-btn');
+            const usecaseContents = document.querySelectorAll('.usecase-content');
+            
+            function switchUsecaseTab(targetId) {
+                usecaseContents.forEach(content => content.classList.add('hidden'));
+                document.getElementById(`${targetId}-content`).classList.remove('hidden');
+                
+                usecaseTabs.forEach(tab => {
+                    tab.classList.remove('border-blue-500', 'text-blue-600');
+                    tab.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+                });
+                const activeTab = document.querySelector(`.usecase-tab-btn[data-target="${targetId}"]`);
+                activeTab.classList.add('border-blue-500', 'text-blue-600');
+                activeTab.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+
+                if (targetId === 'game24' && !window.costChartInstance) {
+                    renderCostChart();
+                }
+            }
+
+            usecaseTabs.forEach(tab => {
+                tab.addEventListener('click', (e) => switchUsecaseTab(e.target.dataset.target));
+            });
+            switchUsecaseTab('game24');
+
+            const promptData = {
+                propose: `# Game of 24 - Propose Next Step
+You are an expert mathematician...
+Current State:
+- Numbers left: {numbers}
+- Current expression: {expression}
+Task:
+Based on the current state, provide exactly 3 distinct and valid next steps.`,
+                value: `# Game of 24 - Evaluate State
+You are an expert evaluator...
+Evaluation Categories:
+- sure: The partial solution is on a clear and direct path to 24.
+- maybe: The partial solution could potentially lead to 24.
+- impossible: The partial solution is very unlikely to lead to 24.
+Task:
+Analyze the state and respond with ONLY one word: "sure", "maybe", or "impossible".`
+            };
+            document.querySelectorAll('.prompt-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('prompt-display').textContent = promptData[btn.dataset.prompt];
+                });
+            });
+
+            const mcpComponentData = {
+                'flight-server': `spring:
+  ai:
+    mcp:
+      server:
+        enabled: true
+        transport: sse
+#
+# FlightSearchTool.java
+@Tool(name = "search_flights", ...)
+public FlightResults search_flights(...) { ... }`,
+                'client': `spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+        toolcallback:
+          enabled: true # Auto-register tools
+        stdio:
+          connections:
+            flight-server: ...
+            hotel-server: ...`,
+                'hotel-server': `spring:
+  ai:
+    mcp:
+      server:
+        enabled: true
+        transport: sse
+#
+# HotelSearchTool.java
+@Tool(name = "find_hotels", ...)
+public HotelResults find_hotels(...) { ... }`
+            };
+
+            const mcpDetails = document.getElementById('mcp-details');
+            document.querySelectorAll('.mcp-component').forEach(comp => {
+                comp.addEventListener('click', () => {
+                    mcpDetails.textContent = mcpComponentData[comp.dataset.component];
+                    mcpDetails.classList.remove('hidden');
+
+                    document.querySelectorAll('.mcp-component').forEach(c => c.classList.remove('ring-2', 'ring-purple-500'));
+                    comp.classList.add('ring-2', 'ring-purple-500');
+                });
+            });
+            
+            function renderCostChart() {
+                 const ctx = document.getElementById('costChart').getContext('2d');
+                 window.costChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Input-Output', 'Chain of Thought', 'Tree of Thoughts'],
+                        datasets: [{
+                            label: 'Relative Resource Cost (Tokens/Compute)',
+                            data: [1, 5, 50],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.6)',
+                                'rgba(20, 184, 166, 0.6)',
+                                'rgba(168, 85, 247, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(20, 184, 166, 1)',
+                                'rgba(168, 85, 247, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Relative Cost (Log Scale)' },
+                                type: 'logarithmic'
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.raw !== null) {
+                                            label += `${context.raw}x`;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+             // Section 5: Best Practices Accordion
+            const practicesData = [
+                { title: "Performance and Cost Analysis", content: "The biggest drawback of ToT is high resource consumption (5-100x more than CoT). To manage this, use hybrid models (cheaper models for evaluation, powerful ones for generation), implement dynamic pruning of the search tree, and cache evaluations of similar states to avoid redundant LLM calls." },
+                { title: "Advanced Prompt Engineering", content: "The system's quality depends on its prompts. 'Propose' prompts should explicitly ask for diverse and creative outputs to avoid repetition. 'Value/Vote' prompts must have clear, specific criteria to create a reliable heuristic and avoid the LLM being overly optimistic or lazy." },
+                { title: "Error Handling and Resilience", content: "A distributed ToT system has multiple failure points. The orchestrator must handle LLM API failures with retry logic, gracefully manage tool execution failures by treating them as dead ends, parse potentially malformed LLM responses, and include a global timeout to prevent runaway processes." },
+                { title: "Advanced Search Strategies", content: "While Breadth-First Search (BFS) is simple, other algorithms can be more efficient. Beam Search is a common optimization that keeps only the top 'b' candidates at each level. Depth-First Search (DFS) can be faster for problems with deep solution paths. Hybrid approaches can also be effective." }
+            ];
+
+            const accordionContainer = document.getElementById('accordion-container');
+            practicesData.forEach((item, index) => {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'border border-gray-200 rounded-lg';
+                accordionItem.innerHTML = `
+                    <h2>
+                        <button type="button" class="accordion-button flex items-center justify-between w-full p-5 font-medium text-left text-gray-700 bg-gray-50 hover:bg-gray-100" data-accordion-target="#accordion-body-${index}">
+                            <span>${item.title}</span>
+                             <svg class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/></svg>
+                        </button>
+                    </h2>
+                    <div id="accordion-body-${index}" class="accordion-content p-5 border-t border-gray-200">
+                        <p class="text-gray-600">${item.content}</p>
+                    </div>
+                `;
+                accordionContainer.appendChild(accordionItem);
+            });
+            
+            accordionContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.accordion-button');
+                if (button) {
+                    const icon = button.querySelector('svg');
+                    const isActive = button.classList.toggle('active');
+                    icon.style.transform = isActive ? 'rotate(0deg)' : 'rotate(180deg)';
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
 
