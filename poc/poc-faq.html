@@ -1,1 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AI Access Governance Co-Pilot Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 
+        Chosen Palette: Calm Neutrals (Slate and Indigo)
+        Application Structure Plan: A single-page application with a fixed sidebar navigation was chosen to provide a stable, easy-to-navigate structure for the dense technical content. This allows users to jump between major sections (Architecture, Server Setup, Client Setup, FAQ) without losing context. This structure is superior to a long-scrolling document for a developer guide, as it facilitates non-linear exploration. Key interactions include an interactive architecture diagram, copyable code blocks, and an accordion-style FAQ to make the content more digestible and actionable.
+        Visualization & Content Choices: 
+        - Report Info: System Architecture Diagram -> Goal: Explain component interactions -> Viz/Method: Interactive HTML/CSS diagram -> Interaction: On hover, a component's details are highlighted and a description appears. Justification: More engaging and informative than a static text diagram.
+        - Report Info: Data/Control Flows -> Goal: Clarify process steps -> Viz/Method: Sequentially animated HTML/CSS steps -> Interaction: As the user scrolls, each step fades into view. Justification: Guides the user through complex processes in a controlled manner.
+        - Report Info: Code Snippets (XML, YAML, Java) -> Goal: Present code clearly for developers -> Viz/Method: Styled code blocks with a "Copy" button -> Interaction: A single click copies the code. Justification: A direct usability improvement for a developer following the guide.
+        - Report Info: FAQ Section -> Goal: Organize Q&A content cleanly -> Viz/Method: Interactive accordion component -> Interaction: Clicking a question reveals the answer. Justification: Reduces visual clutter and improves scannability.
+        CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .sidebar-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .sidebar-link.active {
+            background-color: #eef2ff; /* indigo-50 */
+            color: #4338ca; /* indigo-700 */
+            font-weight: 600;
+            border-left: 3px solid #4f46e5; /* indigo-600 */
+        }
+        .sidebar-link:hover:not(.active) {
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .content-section {
+            padding-top: 1rem;
+        }
+        .code-block {
+            background-color: #1e293b; /* slate-800 */
+            color: #e2e8f0; /* slate-200 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            position: relative;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #475569; /* slate-600 */
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.2s;
+        }
+        .copy-btn:hover {
+            background-color: #64748b; /* slate-500 */
+        }
+        .diagram-box {
+            border: 2px solid #cbd5e1; /* slate-300 */
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+        .diagram-box.highlight {
+            border-color: #4f46e5; /* indigo-600 */
+            transform: scale(1.03);
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.2);
+        }
+        .scroll-fade {
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+            transform: translateY(20px);
+        }
+        .scroll-fade.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .faq-question {
+            cursor: pointer;
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .faq-item.open .faq-answer {
+             max-height: 500px; /* Adjust as needed */
+             padding-top: 1rem;
+             padding-bottom: 1.5rem;
+        }
+        .faq-item.open .faq-arrow {
+            transform: rotate(90deg);
+        }
+        .faq-arrow {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <div class="flex h-screen bg-slate-50">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white shadow-lg flex-shrink-0 hidden md:block">
+            <div class="p-6 border-b border-slate-200">
+                <h1 class="text-xl font-bold text-slate-800">AI Access Co-Pilot</h1>
+                <p class="text-sm text-slate-500 mt-1">Interactive Guide</p>
+            </div>
+            <nav id="sidebar-nav" class="mt-4">
+                <ul>
+                    <li><a href="#architecture" class="sidebar-link block py-3 px-6 text-slate-600">Architecture</a></li>
+                    <li><a href="#server-setup" class="sidebar-link block py-3 px-6 text-slate-600">MCP-Server Setup</a></li>
+                    <li><a href="#client-setup" class="sidebar-link block py-3 px-6 text-slate-600">MCP-Client Setup</a></li>
+                    <li><a href="#deployment" class="sidebar-link block py-3 px-6 text-slate-600">Deployment & Testing</a></li>
+                    <li><a href="#faq" class="sidebar-link block py-3 px-6 text-slate-600">FAQ</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 overflow-y-auto">
+            <div class="max-w-5xl mx-auto p-6 md:p-10">
+
+
+               
+
+
+
+                
+                 <!-- FAQ Section -->
+                <section id="faq" class="content-section">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Frequently Asked Questions</h2>
+                    <p class="mb-8 text-slate-600">Common questions about the architecture, technology stack, and design patterns used in this solution.</p>
+                    <div id="faq-container" class="space-y-4">
+                        <!-- FAQ items will be injected here by JS -->
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            const sections = document.querySelectorAll('.content-section');
+            const mainContent = document.getElementById('main-content');
+            
+            // Debounce function to limit the rate of function execution
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // Function to update the active link based on scroll position
+            const onScroll = () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (mainContent.scrollTop >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                sidebarLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            };
+            
+            mainContent.addEventListener('scroll', debounce(onScroll, 50));
+            onScroll(); // Initial check
+
+            // Smooth scrolling for sidebar links
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        mainContent.scrollTo({
+                            top: targetElement.offsetTop - 40,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            // Diagram hover logic
+            const diagramBoxes = document.querySelectorAll('.diagram-box');
+            const diagramInfo = document.getElementById('diagram-info');
+            diagramBoxes.forEach(box => {
+                box.addEventListener('mouseenter', function() {
+                    diagramBoxes.forEach(b => b.classList.remove('highlight'));
+                    this.classList.add('highlight');
+                    const infoText = this.getAttribute('data-info');
+                    diagramInfo.innerHTML = `<p>${infoText}</p>`;
+                });
+            });
+            
+            // Copy code block functionality
+            window.copyCode = function(button) {
+                const pre = button.parentElement.querySelector('pre');
+                const text = pre.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    button.innerText = 'Copied!';
+                    setTimeout(() => {
+                        button.innerText = 'Copy';
+                    }, 2000);
+                });
+            }
+
+            // FAQ data and generation
+            const faqData = [
+                {
+                    q: "Why was the Spring AI Model Context Protocol (MCP) chosen for this solution?",
+                    a: "The Model Context Protocol (MCP) enables a powerful and reusable **'Enterprise AI Agent' pattern**. Instead of a monolithic application, we decouple the AI's 'brain' (the LLM) from its 'body' (the server with data and tools). This makes the `mcp-server` a centralized, reusable toolkit for the entire enterprise, allowing it to be used by other clients like Slack bots or mobile apps without any changes."
+                },
+                {
+                    q: "Why use Azure OpenAI and Java/Spring instead of a Python-based AI stack?",
+                    a: "This project's focus is on integrating AI into a robust, secure, and maintainable **enterprise application**. The Java/Spring ecosystem is a common standard in large organizations. This choice leverages existing developer skills and the framework's mature libraries for security, data access, and scalability, prioritizing the creation of an enterprise-ready *product* that *uses* AI."
+                },
+                {
+                    q: "What is the purpose of having two separate applications, mcp-server and mcp-client?",
+                    a: "This separation is a core principle of microservices. The **`mcp-server`** is the headless intelligence core that manages data and exposes tools. The **`mcp-client`** is the user interaction layer that consumes those tools. This ensures the core AI capabilities can be developed and scaled independently of how users interact with them."
+                },
+                {
+                    q: "Why was Vaadin chosen for the user interface?",
+                    a: "Vaadin was selected for **developer velocity** and its robust features. It allows the entire application to be written in Java, eliminating the need for separate frontend expertise. Its seamless security integration and built-in server push (`@Push`) for real-time streaming make it ideal for a hackathon environment."
+                },
+                {
+                    q: "What is Tree-of-Thoughts (ToT) and why is it included?",
+                    a: "Tree-of-Thoughts (ToT) is an advanced prompting technique that improves AI reasoning on complex problems. It guides the LLM to decompose a problem, generate multiple approaches, evaluate them, and then synthesize a final answer. It was included as a high-level tool to demonstrate how the system can handle queries that are too complex for a single tool call."
+                },
+                {
+                    q: "Is this solution ready for a production environment?",
+                    a: "The solution is a powerful **prototype**. The architecture is scalable, but for a true production deployment, the H2 in-memory database should be replaced with a persistent one (e.g., PostgreSQL), the placeholder ML logic should be implemented with real models, and the applications should be containerized for deployment on a platform like Azure Kubernetes Service (AKS)."
+                }
+            ];
+
+            const faqContainer = document.getElementById('faq-container');
+            faqData.forEach(item => {
+                const faqItem = document.createElement('div');
+                faqItem.className = 'faq-item bg-white rounded-lg shadow-lg border border-slate-200';
+                faqItem.innerHTML = `
+                    <div class="faq-question p-5 flex justify-between items-center">
+                        <h4 class="font-semibold text-slate-800">${item.q}</h4>
+                        <span class="faq-arrow text-indigo-500 text-2xl font-light transition-transform duration-300">→</span>
+                    </div>
+                    <div class="faq-answer px-5 text-slate-600">
+                        <p>${item.a}</p>
+                    </div>
+                `;
+                faqContainer.appendChild(faqItem);
+            });
+
+            document.querySelectorAll('.faq-question').forEach(button => {
+                button.addEventListener('click', () => {
+                    button.parentElement.classList.toggle('open');
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
 
