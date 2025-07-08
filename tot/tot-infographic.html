@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infographic: Implementing Tree of Thoughts with Spring AI</title>
+    <!-- Chosen Palette: Energetic & Playful -->
+    <!-- Application Structure Plan: The application is a single-page, top-to-bottom scrollable infographic. The narrative structure was chosen to guide the user through a logical story: 1) The Problem (limitations of old methods), 2) The Solution (introducing ToT), 3) How it Works (the four pillars), 4) The Cost (performance trade-offs), 5) How to Build It (mapping concepts to Spring AI), and 6) Key Takeaways (best practices). This linear flow is ideal for an infographic format, making complex information digestible in a sequential, story-like manner, which is more effective for initial understanding than a user-driven exploratory model. -->
+    <!-- Visualization & Content Choices: 
+        - Reasoning Framework Comparison: Goal: Compare. Method: 3-column HTML/CSS layout. Justification: Allows for quick, side-by-side visual differentiation of IO, CoT, and ToT without user interaction, fitting the infographic style. No library needed. NO SVG/Mermaid.
+        - Four Pillars Flowchart: Goal: Organize. Method: HTML/CSS Grid with styled borders and Unicode arrows. Justification: Creates a clear, static visual flow of the ToT process, which is essential for explaining the methodology at a glance. No library needed. NO SVG/Mermaid.
+        - Resource Cost Chart: Goal: Compare. Method: Chart.js Bar Chart (Canvas). Justification: Provides a strong visual impact for the high-magnitude difference in resource consumption, a key takeaway from the report. Chart.js is used for its clean rendering on Canvas. NO SVG/Mermaid.
+        - Best Practices/Key Stats: Goal: Inform. Method: Styled HTML cards with large text for key numbers (e.g., '100x Cost'). Justification: Draws immediate attention to critical data points, a classic infographic technique. No library needed. NO SVG/Mermaid.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+            color: #073B4C;
+        }
+        .bg-primary { background-color: #073B4C; }
+        .text-accent-1 { color: #FF6B6B; }
+        .text-accent-2 { color: #FFD166; }
+        .text-accent-3 { color: #06D6A0; }
+        .text-accent-4 { color: #118AB2; }
+        .bg-accent-1-light { background-color: rgba(255, 107, 107, 0.1); }
+        .border-accent-1 { border-color: #FF6B6B; }
+        .border-accent-4 { border-color: #118AB2; }
+        .section-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 py-12 md:py-16">
+
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-primary mb-3">From Linear Chains to Branching Trees</h1>
+            <p class="text-lg md:text-xl text-accent-4 max-w-3xl mx-auto">A Visual Guide to Implementing Tree of Thoughts with Spring AI</p>
+        </header>
+
+        <section class="mb-20">
+            <div class="section-card">
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div class="border-r border-gray-200 pr-8">
+                        <h3 class="text-xl font-bold mb-2 text-accent-1">The Problem</h3>
+                        <p class="text-gray-600">Standard AI reasoning is linear. One early mistake can derail the entire problem-solving process.</p>
+                    </div>
+                    <div class="border-r border-gray-200 pr-8">
+                        <h3 class="text-xl font-bold mb-2 text-accent-2">The Goal</h3>
+                        <p class="text-gray-600">Create AI systems that can explore, plan, and backtrack—mimicking human problem-solving.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2 text-accent-3">The Solution</h3>
+                        <p class="text-gray-600">The **Tree of Thoughts (ToT)** framework, enabling multi-path, deliberate reasoning.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-primary">The Evolution of AI Reasoning</h2>
+            <p class="text-center text-gray-500 mb-10">ToT isn't just an update; it's a paradigm shift.</p>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-gray-300">
+                    <h3 class="text-2xl font-bold mb-3">Input-Output</h3>
+                    <p class="font-semibold text-gray-500 mb-4">Direct answer generation.</p>
+                    <div class="text-6xl text-center text-gray-300 mb-4">&#10247;</div>
+                    <p class="text-red-500 bg-red-50 p-3 rounded-md"><strong class="font-semibold">Limitation:</strong> Fails on any task requiring intermediate steps.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-accent-2">
+                    <h3 class="text-2xl font-bold mb-3">Chain of Thought (CoT)</h3>
+                    <p class="font-semibold text-gray-500 mb-4">"Think step-by-step."</p>
+                    <div class="text-4xl text-center text-accent-2 mb-4 font-mono">&#8594; &#8594; &#8594;</div>
+                    <p class="text-red-500 bg-red-50 p-3 rounded-md"><strong class="font-semibold">Limitation:</strong> Error amplification. An early mistake corrupts all subsequent steps.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-accent-3">
+                    <h3 class="text-2xl font-bold mb-3">Tree of Thoughts (ToT)</h3>
+                    <p class="font-semibold text-gray-500 mb-4">Explore multiple paths at once.</p>
+                    <div class="text-4xl text-center text-accent-3 mb-4 font-mono">&harr; &#10549; &harr;</div>
+                    <p class="text-green-600 bg-green-50 p-3 rounded-md"><strong class="font-semibold">Capability:</strong> Enables deliberate search, planning, and backtracking.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-10 text-primary">How ToT Works: The 4 Pillars</h2>
+            <div class="section-card max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12 items-center text-center">
+                    <div class="p-4 bg-accent-1-light rounded-lg">
+                        <h3 class="text-xl font-bold text-accent-1">1. Decompose</h3>
+                        <p class="text-gray-700 mt-1">Break the problem into smaller steps or "thoughts".</p>
+                    </div>
+                    <div class="flex justify-center md:justify-start">
+                        <span class="text-4xl text-gray-400 font-mono transform rotate-90 md:rotate-0">&rarr;</span>
+                    </div>
+                    <div class="p-4 bg-yellow-50 rounded-lg">
+                        <h3 class="text-xl font-bold text-yellow-600">2. Generate (Proposer)</h3>
+                        <p class="text-gray-700 mt-1">Use an LLM to generate multiple potential next thoughts.</p>
+                    </div>
+                    <div class="flex justify-center md:justify-start">
+                         <span class="text-4xl text-gray-400 font-mono transform rotate-90 md:rotate-0">&rarr;</span>
+                    </div>
+                    <div class="p-4 bg-teal-50 rounded-lg">
+                        <h3 class="text-xl font-bold text-teal-600">3. Evaluate (Evaluator)</h3>
+                        <p class="text-gray-700 mt-1">Use an LLM to judge the promise of each generated thought.</p>
+                    </div>
+                     <div class="flex justify-center md:justify-start">
+                        <span class="text-4xl text-gray-400 font-mono transform rotate-90 md:rotate-0">&rarr;</span>
+                    </div>
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <h3 class="text-xl font-bold text-blue-600">4. Search</h3>
+                        <p class="text-gray-700 mt-1">Use an algorithm (BFS, DFS) to navigate the tree of thoughts.</p>
+                    </div>
+                    <div class="p-4 text-gray-700 bg-gray-100 rounded-lg">
+                        <span class="text-2xl font-bold text-gray-800">Final Solution</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-primary">The Cost of Power</h2>
+            <p class="text-center text-gray-500 mb-10">ToT's deliberate reasoning requires significantly more resources.</p>
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="section-card">
+                    <h3 class="text-2xl font-bold mb-4 text-accent-4">Relative Resource Cost</h3>
+                    <p class="text-gray-600 mb-6">Exploring multiple branches means many more calls to the LLM. The chart below shows the relative cost increase on a logarithmic scale. ToT is reserved for complex problems where its planning capabilities are essential.</p>
+                    <div class="flex items-baseline justify-center">
+                        <span class="text-7xl font-extrabold text-accent-1">100x</span>
+                        <span class="text-xl text-gray-600 ml-2">Potential Cost Increase</span>
+                    </div>
+                </div>
+                <div class="section-card">
+                    <div class="chart-container">
+                        <canvas id="costComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-10 text-primary">Building with Spring AI 1.0.0</h2>
+            <div class="section-card max-w-5xl mx-auto">
+                <p class="text-center text-gray-600 mb-8">Spring AI provides the building blocks. The key is mapping ToT concepts to its components.</p>
+                <div class="space-y-4">
+                    <div class="flex flex-col md:flex-row items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="font-bold text-accent-4 w-full md:w-1/3 text-center md:text-right md:pr-4 mb-2 md:mb-0">ToT Orchestrator</div>
+                        <div class="text-2xl text-gray-300 hidden md:block">&rarr;</div>
+                        <div class="w-full md:w-2/3 md:pl-4 text-center md:text-left text-gray-700">A custom <code class="bg-gray-200 px-2 py-1 rounded text-sm">@Service</code> class you write to manage the search loop.</div>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="font-bold text-accent-4 w-full md:w-1/3 text-center md:text-right md:pr-4 mb-2 md:mb-0">Thought Generation & Evaluation</div>
+                        <div class="text-2xl text-gray-300 hidden md:block">&rarr;</div>
+                        <div class="w-full md:w-2/3 md:pl-4 text-center md:text-left text-gray-700">Handled by the <code class="bg-gray-200 px-2 py-1 rounded text-sm">ChatClient</code> using specific "Proposer" and "Evaluator" prompts.</div>
+                    </div>
+                     <div class="flex flex-col md:flex-row items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="font-bold text-accent-4 w-full md:w-1/3 text-center md:text-right md:pr-4 mb-2 md:mb-0">Actionable Thoughts (Tools)</div>
+                        <div class="text-2xl text-gray-300 hidden md:block">&rarr;</div>
+                        <div class="w-full md:w-2/3 md:pl-4 text-center md:text-left text-gray-700">Enabled by the pivotal shift to <strong class="text-primary">"Tool Calling"</strong> using the <code class="bg-gray-200 px-2 py-1 rounded text-sm">@Tool</code> annotation and MCP.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center border-t pt-10">
+             <h2 class="text-3xl font-bold text-center mb-6 text-primary">Key Takeaways for Production</h2>
+             <div class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-accent-1">
+                     <h3 class="font-bold mb-2">Manage Costs</h3>
+                     <p class="text-sm text-gray-600">Use hybrid models (cheaper for evaluation, stronger for generation) and cache results.</p>
+                 </div>
+                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-accent-2">
+                     <h3 class="font-bold mb-2">Engineer Prompts</h3>
+                     <p class="text-sm text-gray-600">Proposer prompts must ask for diversity. Evaluator prompts need clear, strict criteria.</p>
+                 </div>
+                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-accent-3">
+                     <h3 class="font-bold mb-2">Handle Failures</h3>
+                     <p class="text-sm text-gray-600">Implement retries for LLM calls and gracefully handle tool execution errors in the search loop.</p>
+                 </div>
+             </div>
+        </footer>
+    </div>
+
+    <script>
+        function wrapLabel(str, maxWidth) {
+            if (str.length <= maxWidth) {
+                return str;
+            }
+            const words = str.split(' ');
+            let lines = [];
+            let currentLine = '';
+            words.forEach(word => {
+                if ((currentLine + ' ' + word).trim().length > maxWidth && currentLine.length > 0) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = (currentLine + ' ' + word).trim();
+                }
+            });
+            if (currentLine.length > 0) {
+                lines.push(currentLine);
+            }
+            return lines;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('costComparisonChart').getContext('2d');
+            
+            const originalLabels = ['Input-Output', 'Chain of Thought', 'Tree of Thoughts'];
+            const processedLabels = originalLabels.map(label => wrapLabel(label, 16));
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: processedLabels,
+                    datasets: [{
+                        label: 'Relative Resource Cost (Log Scale)',
+                        data: [1, 5, 50],
+                        backgroundColor: [
+                            'rgba(156, 163, 175, 0.6)',
+                            'rgba(255, 209, 102, 0.6)',
+                            'rgba(6, 214, 160, 0.6)',
+                        ],
+                        borderColor: [
+                            'rgba(156, 163, 175, 1)',
+                            'rgba(255, 209, 102, 1)',
+                            'rgba(6, 214, 160, 1)',
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            type: 'logarithmic',
+                            title: {
+                                display: true,
+                                text: 'Relative Cost (Log Scale)'
+                            },
+                        },
+                        x: {
+                           ticks: {
+                               font: {
+                                   size: 14,
+                               }
+                           }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#073B4C',
+                            titleFont: {
+                                size: 16
+                            },
+                            bodyFont: {
+                                size: 14
+                            },
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const item = tooltipItems[0];
+                                    let label = item.chart.data.labels[item.dataIndex];
+                                    if (Array.isArray(label)) {
+                                      return label.join(' ');
+                                    } else {
+                                      return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
