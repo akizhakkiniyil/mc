@@ -1,0 +1,611 @@
+You're looking for a user interface that can interact with your Spring AI MCP Client, especially one that demonstrates streaming responses and leverages the advanced prompt engineering for inferential tasks.
+Below is a single HTML file (index.html) that provides a simple web UI for your access governance application. It includes sections for general chat (both synchronous and streaming) and dedicated forms for the structured access governance queries (recommendations, anomaly explanations, and policy drift explanations).
+To make the streaming work, I've also made a minor adjustment to your AccessGovernanceClientService.java and AccessGovernanceController.java to ensure a dedicated streaming endpoint is available and uses an appropriate system prompt.
+1. Update MCP Client Application Code
+First, ensure your access-governance-mcp-client application has the following updates:
+access-governance-mcp-client/src/main/java/com/example/accessgovernance/service/AccessGovernanceClientService.java
+package com.example.accessgovernance.service;
+
+import com.example.accessgovernance.service.model.AccessRecommendation;
+import com.example.accessgovernance.service.model.AnomalyExplanation;
+import com.example.accessgovernance.service.model.PolicyDriftExplanation;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.mcp.client.McpClient;
+import org.springframework.ai.parser.BeanOutputParser;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux; // Import Flux for streaming
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AccessGovernanceClientService {
+
+    private final ChatClient chatClient;
+    private final McpClient mcpClient; // Injected MCP Client
+
+    // Constructor to ensure ChatClient is built with tools
+    public AccessGovernanceClientService(ChatClient.Builder chatClientBuilder, McpClient mcpClient) {
+        this.chatClient = chatClientBuilder
+             .defaultTools(mcpClient.getAvailableTools()) // MCP Client discovers and provides tools
+             .build();
+        this.mcpClient = mcpClient;
+    }
+
+    /**
+     * Recommends group memberships for a new joiner or for a role change.
+     * Uses Get_Employee_Context_Graph for inferential reasoning.
+     */
+    public AccessRecommendation recommendAccess(String employeeId, String employeeName, String department, String role, String lineManagerId) {
+        log.info("Requesting access recommendation for new joiner: {} ({})", employeeName, employeeId);
+
+        BeanOutputParser<AccessRecommendation> parser = new BeanOutputParser<>(AccessRecommendation.class);
+        String format = parser.getFormat();
+
+        // Advanced Prompt Engineering for inferential task (Tree-of-Thoughts like)
+        SystemMessage systemMessage = new SystemMessage("""
+            You are an expert Access Governance Advisor. Your goal is to provide precise and justified group membership recommendations,
+            strictly adhering to the principle of least privilege. You must use the provided tools to gather all necessary context
+            about the employee, their line manager, direct reports, and peers.
+
+            Follow these steps for your reasoning:
+            1. Use the 'Get_Employee_Context_Graph' tool for the new joiner's employee ID to understand their organizational context.
+            2. Analyze the 'employeeDetails', 'lineManagerDetails', 'directReports', and 'peerEmployeesInSameRoleAndDept' from the context graph.
+            3. Pay close attention to the 'currentGroupMemberships' of the line manager and peers.
+            4. Based on the new joiner's department, role, and the access patterns of their manager and peers,
+               suggest a minimal set of group memberships.
+            5. For each recommended group, provide a clear justification based on the employee's role, department, or peer/manager access.
+            6. If an employee already has access that seems excessive or unusual compared to peers, highlight it for review.
+            7. Your final output MUST be a JSON object conforming to the provided schema. Do NOT include any conversational text outside the JSON.
+            {format}
+            """);
+
+        UserMessage userMessage = new UserMessage(Map.of(
+                "employeeId", employeeId,
+                "employeeName", employeeName,
+                "department", department,
+                "role", role,
+                "lineManagerId", lineManagerId
+        ), """
+            I need group membership recommendations for a new employee.
+            Employee ID: {employeeId}
+            Name: {employeeName}
+            Department: {department}
+            Role: {role}
+            Line Manager ID: {lineManagerId}
+            """);
+
+        Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+        String response = chatClient.prompt(prompt).call().content();
+        return parser.parse(response);
+    }
+
+    /**
+     * Explains a detected access anomaly in plain language.
+     * Uses Detect_Access_Anomalies and Get_Employee_Details.
+     */
+    public AnomalyExplanation explainAnomaly(String employeeId) {
+        log.info("Requesting anomaly explanation for employee: {}", employeeId);
+
+        BeanOutputParser<AnomalyExplanation> parser = new BeanOutputParser<>(AnomalyExplanation.class);
+        String format = parser.getFormat();
+
+        SystemMessage systemMessage = new SystemMessage("""
+            You are an AI Security Analyst. Your task is to explain detected access anomalies in clear, concise, and non-technical language.
+            You must use the 'Detect_Access_Anomalies' tool to get the anomaly details and 'Get_Employee_Details' for employee context.
+
+            Follow these steps for your reasoning:
+            1. Use the 'Detect_Access_Anomalies' tool for the given employee ID.
+            2. If anomalies are found, use 'Get_Employee_Details' to get the employee's basic information.
+            3. For each anomaly, provide a plain language explanation of why it's unusual or risky.
+            4. List the key contributing factors that led to the anomaly detection.
+            5. Suggest a clear, actionable next step for IT or HR.
+            6. Your final output MUST be a JSON object conforming to the provided schema. Do NOT include any conversational text outside the JSON.
+            {format}
+            """);
+
+        UserMessage userMessage = new UserMessage(Map.of("employeeId", employeeId),
+                "Explain any access anomalies detected for employee ID: {employeeId}.");
+
+        Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+        String response = chatClient.prompt(prompt).call().content();
+        return parser.parse(response);
+    }
+
+    /**
+     * Explains policy drift for a group in plain language.
+     * Uses Detect_Policy_Drift and Get_Group_Details.
+     */
+    public PolicyDriftExplanation explainPolicyDrift(String groupId, LocalDate baselineDate) {
+        log.info("Requesting policy drift explanation for group: {} since {}", groupId, baselineDate);
+
+        BeanOutputParser<PolicyDriftExplanation> parser = new BeanOutputParser<>(PolicyDriftExplanation.class);
+        String format = parser.getFormat();
+
+        SystemMessage systemMessage = new SystemMessage("""
+            You are an AI Compliance Officer. Your role is to analyze and explain policy drift for access groups.
+            You must use the 'Detect_Policy_Drift' tool to get the drift report and 'Get_Group_Details' for group context.
+
+            Follow these steps for your reasoning:
+            1. Use the 'Detect_Policy_Drift' tool for the given group ID and baseline date.
+            2. Use 'Get_Group_Details' to understand the group's purpose.
+            3. Explain in plain language what "policy drift" means for this specific group.
+            4. Clearly list who was added and who was removed since the baseline date.
+            5. Provide a brief assessment of the potential impact or risk of this drift.
+            6. Your final output MUST be a JSON object conforming to the provided schema. Do NOT include any conversational text outside the JSON.
+            {format}
+            """);
+
+        UserMessage userMessage = new UserMessage(Map.of(
+                "groupId", groupId,
+                "baselineDate", baselineDate.toString()
+        ), """
+            Explain the policy drift for group ID: {groupId} since {baselineDate}.
+            """);
+
+        Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+        String response = chatClient.prompt(prompt).call().content();
+        return parser.parse(response);
+    }
+
+    /**
+     * Provides a general chat response, potentially using tools for basic retrieval.
+     */
+    public String generalChat(String userQuery) {
+        log.info("General chat query: {}", userQuery);
+        SystemMessage systemMessage = new SystemMessage("""
+            You are a helpful AI assistant for access governance. You can answer questions about employees, groups,
+            and access patterns by using the available tools. If you need more information, ask clarifying questions.
+            Be concise and helpful.
+            """);
+        UserMessage userMessage = new UserMessage(userQuery);
+        Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+        return chatClient.prompt(prompt).call().content();
+    }
+
+    /**
+     * Provides a general chat response with streaming, potentially using tools for basic retrieval.
+     */
+    public Flux<String> streamGeneralChat(String userQuery) {
+        log.info("Streaming general chat query: {}", userQuery);
+        SystemMessage systemMessage = new SystemMessage("""
+            You are a helpful AI assistant for access governance. You can answer questions about employees, groups,
+            and access patterns by using the available tools. If you need more information, ask clarifying questions.
+            Be concise and helpful.
+            """);
+        UserMessage userMessage = new UserMessage(userQuery);
+        Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+        return chatClient.prompt(prompt).stream().content();
+    }
+}
+
+access-governance-mcp-client/src/main/java/com/example/accessgovernance/controller/AccessGovernanceController.java
+package com.example.accessgovernance.controller;
+
+import com.example.accessgovernance.service.AccessGovernanceClientService;
+import com.example.accessgovernance.service.model.AccessRecommendation;
+import com.example.accessgovernance.service.model.AnomalyExplanation;
+import com.example.accessgovernance.service.model.PolicyDriftExplanation;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType; // Import MediaType
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux; // Import Flux for streaming
+
+import java.time.LocalDate;
+
+@RestController
+@RequestMapping("/access-ai")
+@RequiredArgsConstructor
+public class AccessGovernanceController {
+
+    private final AccessGovernanceClientService clientService;
+
+    /**
+     * General chat endpoint, can use tools for basic data retrieval (synchronous).
+     * Example: GET /access-ai/chat?query=What department is Alice Johnson in?
+     */
+    @GetMapping("/chat")
+    public String chat(@RequestParam String query) {
+        return clientService.generalChat(query);
+    }
+
+    /**
+     * General chat endpoint with streaming responses, can use tools for basic data retrieval.
+     * Example: GET /access-ai/stream-chat?query=Can you tell me everything about employee emp001?
+     */
+    @GetMapping(value = "/stream-chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamChat(@RequestParam String query) {
+        return clientService.streamGeneralChat(query);
+    }
+
+    /**
+     * Recommends group memberships for a new joiner or role change.
+     * Example: GET /access-ai/recommend-access?employeeId=new001&employeeName=John%20Doe&department=Engineering&role=Software%20Engineer&lineManagerId=mgr001
+     */
+    @GetMapping("/recommend-access")
+    public AccessRecommendation recommendAccess(
+            @RequestParam String employeeId,
+            @RequestParam String employeeName,
+            @RequestParam String department,
+            @RequestParam String role,
+            @RequestParam String lineManagerId) {
+        return clientService.recommendAccess(employeeId, employeeName, department, role, lineManagerId);
+    }
+
+    /**
+     * Explains a detected access anomaly for an employee.
+     * Example: GET /access-ai/explain-anomaly?employeeId=emp001
+     */
+    @GetMapping("/explain-anomaly")
+    public AnomalyExplanation explainAnomaly(@RequestParam String employeeId) {
+        return clientService.explainAnomaly(employeeId);
+    }
+
+    /**
+     * Explains policy drift for a specific group.
+     * Example: GET /access-ai/explain-policy-drift?groupId=grp001&baselineDate=2024-01-01
+     */
+    @GetMapping("/explain-policy-drift")
+    public PolicyDriftExplanation explainPolicyDrift(
+            @RequestParam String groupId,
+            @RequestParam String baselineDate) {
+        return clientService.explainPolicyDrift(groupId, LocalDate.parse(baselineDate));
+    }
+}
+
+2. User Interface (index.html)
+Save the following content as index.html in a new folder (e.g., ui/) outside your Spring Boot project directories.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Governance AI Assistant</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+       .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+       .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+       .section h3 {
+            color: #34495e;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"],
+        input[type="date"],
+        textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+       .response-area {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            min-height: 100px;
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+            word-wrap: break-word; /* Break long words */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            color: #333;
+            overflow-x: auto; /* Enable horizontal scrolling for wide content */
+        }
+       .response-area pre {
+            margin: 0;
+        }
+       .loading-indicator {
+            display: none;
+            color: #007bff;
+            font-style: italic;
+            margin-top: 10px;
+        }
+       .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Access Governance AI Assistant</h1>
+
+        <div class="section">
+            <h3>General Chat</h3>
+            <label for="generalQuery">Ask a general question:</label>
+            <textarea id="generalQuery" rows="3" placeholder="e.g., What groups does Alice Johnson belong to?"></textarea>
+            <div class="button-group">
+                <button onclick="sendGeneralChat()">Send (Synchronous)</button>
+                <button onclick="startStreamingChat()">Start Stream (Asynchronous)</button>
+                <button onclick="stopStreamingChat()">Stop Stream</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Access Recommendation (New Joiner / Role Change)</h3>
+            <label for="recEmployeeId">Employee ID (New Joiner):</label>
+            <input type="text" id="recEmployeeId" value="new001">
+            <label for="recEmployeeName">Employee Name:</label>
+            <input type="text" id="recEmployeeName" value="John Doe">
+            <label for="recDepartment">Department:</label>
+            <input type="text" id="recDepartment" value="Engineering">
+            <label for="recRole">Role:</label>
+            <input type="text" id="recRole" value="Software Engineer">
+            <label for="recLineManagerId">Line Manager ID:</label>
+            <input type="text" id="recLineManagerId" value="mgr001">
+            <button onclick="sendRecommendation()">Get Recommendation</button>
+        </div>
+
+        <div class="section">
+            <h3>Access Anomaly Explanation</h3>
+            <label for="anomalyEmployeeId">Employee ID:</label>
+            <input type="text" id="anomalyEmployeeId" value="emp001">
+            <button onclick="sendAnomalyExplanation()">Explain Anomaly</button>
+        </div>
+
+        <div class="section">
+            <h3>Policy Drift Explanation</h3>
+            <label for="driftGroupId">Group ID:</label>
+            <input type="text" id="driftGroupId" value="grp001">
+            <label for="driftBaselineDate">Baseline Date:</label>
+            <input type="date" id="driftBaselineDate" value="2024-01-01">
+            <button onclick="sendPolicyDriftExplanation()">Explain Policy Drift</button>
+        </div>
+
+        <div class="container">
+            <h2>AI Response</h2>
+            <div id="responseDisplay" class="response-area">
+                <pre>Waiting for your query...</pre>
+            </div>
+            <div id="loadingIndicator" class="loading-indicator">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/access-ai';
+        const responseDisplay = document.getElementById('responseDisplay');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        let eventSource = null;
+
+        function showLoading() {
+            loadingIndicator.style.display = 'block';
+            responseDisplay.innerHTML = '<pre>Loading...</pre>';
+        }
+
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+        }
+
+        function displayResponse(data) {
+            hideLoading();
+            if (typeof data === 'object') {
+                responseDisplay.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } else {
+                responseDisplay.innerHTML = `<pre>${data}</pre>`;
+            }
+        }
+
+        function displayStreamingChunk(chunk) {
+            hideLoading();
+            const preElement = responseDisplay.querySelector('pre');
+            if (preElement) {
+                preElement.textContent += chunk;
+            } else {
+                responseDisplay.innerHTML = `<pre>${chunk}</pre>`;
+            }
+        }
+
+        async function sendGeneralChat() {
+            const query = document.getElementById('generalQuery').value;
+            if (!query) {
+                alert('Please enter a query.');
+                return;
+            }
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/chat?query=${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.text();
+                displayResponse(data);
+            } catch (error) {
+                console.error('Error:', error);
+                displayResponse(`Error: ${error.message}`);
+            }
+        }
+
+        function startStreamingChat() {
+            const query = document.getElementById('generalQuery').value;
+            if (!query) {
+                alert('Please enter a query for streaming.');
+                return;
+            }
+
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            showLoading();
+            responseDisplay.innerHTML = '<pre></pre>'; // Clear previous content for streaming
+
+            eventSource = new EventSource(`${API_BASE_URL}/stream-chat?query=${encodeURIComponent(query)}`);
+
+            eventSource.onopen = () => {
+                console.log('SSE connection opened.');
+                hideLoading();
+            };
+
+            eventSource.onmessage = (event) => {
+                displayStreamingChunk(event.data);
+            };
+
+            eventSource.onerror = (error) => {
+                console.error('SSE error:', error);
+                eventSource.close();
+                displayStreamingChunk('\n\n--- Stream ended with error ---');
+                hideLoading();
+            };
+
+            eventSource.onclose = () => {
+                console.log('SSE connection closed.');
+                displayStreamingChunk('\n\n--- Stream completed ---');
+                hideLoading();
+            };
+        }
+
+        function stopStreamingChat() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                console.log('SSE connection manually closed.');
+                displayStreamingChunk('\n\n--- Stream manually stopped ---');
+                hideLoading();
+            }
+        }
+
+        async function sendRecommendation() {
+            const employeeId = document.getElementById('recEmployeeId').value;
+            const employeeName = document.getElementById('recEmployeeName').value;
+            const department = document.getElementById('recDepartment').value;
+            const role = document.getElementById('recRole').value;
+            const lineManagerId = document.getElementById('recLineManagerId').value;
+
+            if (!employeeId ||!employeeName ||!department ||!role ||!lineManagerId) {
+                alert('Please fill in all recommendation fields.');
+                return;
+            }
+
+            showLoading();
+            try {
+                const url = `${API_BASE_URL}/recommend-access?employeeId=${encodeURIComponent(employeeId)}&employeeName=${encodeURIComponent(employeeName)}&department=${encodeURIComponent(department)}&role=${encodeURIComponent(role)}&lineManagerId=${encodeURIComponent(lineManagerId)}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayResponse(data);
+            } catch (error) {
+                console.error('Error:', error);
+                displayResponse(`Error: ${error.message}`);
+            }
+        }
+
+        async function sendAnomalyExplanation() {
+            const employeeId = document.getElementById('anomalyEmployeeId').value;
+            if (!employeeId) {
+                alert('Please enter an Employee ID for anomaly explanation.');
+                return;
+            }
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/explain-anomaly?employeeId=${encodeURIComponent(employeeId)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayResponse(data);
+            } catch (error) {
+                console.error('Error:', error);
+                displayResponse(`Error: ${error.message}`);
+            }
+        }
+
+        async function sendPolicyDriftExplanation() {
+            const groupId = document.getElementById('driftGroupId').value;
+            const baselineDate = document.getElementById('driftBaselineDate').value;
+            if (!groupId ||!baselineDate) {
+                alert('Please enter Group ID and Baseline Date for policy drift explanation.');
+                return;
+            }
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/explain-policy-drift?groupId=${encodeURIComponent(groupId)}&baselineDate=${encodeURIComponent(baselineDate)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayResponse(data);
+            } catch (error) {
+                console.error('Error:', error);
+                displayResponse(`Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
+
+3. How to Run the UI
+ * Save the HTML: Save the code above as index.html in a new, empty directory (e.g., my-access-governance-ui).
+ * Start Docker Compose: Ensure your docker-compose.yml file is correctly set up and your access-governance-mcp-server and access-governance-mcp-client containers are running.
+   * Navigate to your project's root directory (where docker-compose.yml is located).
+   * Run: docker-compose up --build -d
+   * Verify both services are Up using docker-compose ps.
+ * Open the UI:
+   * Simply open the index.html file in your web browser. You can do this by double-clicking the file or by dragging it into your browser.
+   * Since the UI is a static HTML file, it will run directly in your browser and make requests to http://localhost:8080, where your access-governance-mcp-client is expected to be running.
+Now you can interact with your AI assistant for access governance, testing both synchronous and streaming capabilities!
