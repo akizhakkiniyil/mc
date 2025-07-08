@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: access-governance-mcp-client # Name of this Spring Boot application
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY} # OpenAI API Key, loaded from environment variable
+      chat:
+        model: gpt-4o-mini # Using gpt-4o-mini model for cost efficiency
+        options:
+          temperature: 0.7 # Controls randomness of output
+          responseFormat: # Enable JSON mode for structured output
+            type: json_object
+  # Azure AD OAuth2 Configuration
+  security:
+    oauth2:
+      client:
+        registration:
+          azure-ad: # This is your client registration ID. Keep it consistent with your Azure AD redirect URI.
+            provider: azure
+            client-id: <YOUR_AZURE_AD_CLIENT_ID> # Replace with your Application (client) ID
+            client-secret: <YOUR_AZURE_AD_CLIENT_SECRET> # Replace with your Client Secret Value
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}" # Default Spring Security callback URL
+            scope: openid,profile,email,offline_access,https://graph.microsoft.com/User.Read # Essential scopes for user info
+        provider:
+          azure:
+            issuer-uri: https://login.microsoftonline.com/<YOUR_AZURE_AD_TENANT_ID>/v2.0 # Replace with your Directory (tenant) ID
