@@ -1,0 +1,249 @@
+package com.example.accessgovernance.ui;
+
+import com.example.accessgovernance.service.AccessGovernanceClientService;
+import com.example.accessgovernance.service.model.AccessRecommendation;
+import com.example.accessgovernance.service.model.AnomalyExplanation;
+import com.example.accessgovernance.service.model.PolicyDriftExplanation;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.Route;
+import reactor.core.scheduler.Schedulers;
+
+import java.time.LocalDate;
+
+@Route("") // Maps this view to the root URL
+@PageTitle("Access Governance AI")
+public class MainView extends VerticalLayout {
+
+    private final AccessGovernanceClientService clientService;
+    private final ObjectMapper objectMapper; // For pretty printing JSON
+    private final UI ui; // Reference to the current UI for thread-safe updates
+
+    private TextArea responseDisplay;
+
+    // Fields for Access Recommendation
+    private TextField recEmployeeId;
+    private TextField recEmployeeName;
+    private TextField recDepartment;
+    private TextField recRole;
+    private TextField recLineManagerId;
+
+    // Fields for Anomaly Explanation
+    private TextField anomalyEmployeeId;
+
+    // Fields for Policy Drift Explanation
+    private TextField driftGroupId;
+    private TextField driftBaselineDate;
+
+
+    public MainView(AccessGovernanceClientService clientService) { // Removed AuthenticationContext injection
+        this.clientService = clientService;
+        this.ui = UI.getCurrent(); // Get current UI instance
+        this.objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT); // Pretty print JSON
+
+        setSizeFull();
+        setPadding(true);
+        setSpacing(true);
+        // Removed LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM as they are not defined without Lumo theme
+        // If you use Lumo theme, you can keep these.
+
+        // --- No User Info & Logout without AAD ---
+        add(new Paragraph("Welcome to the Access Governance AI Assistant!"));
+
+        // --- General Chat Section ---
+        add(new H2("General Chat"));
+        TextArea generalQuery = new TextArea("Ask a general question:");
+        generalQuery.setPlaceholder("e.g., What groups does Alice Johnson belong to?");
+        generalQuery.setWidthFull();
+
+        Button sendSyncButton = new Button("Send (Synchronous)", event -> sendGeneralChat(generalQuery.getValue()));
+        Button startStreamButton = new Button("Start Stream (Asynchronous)", event -> startStreamingChat(generalQuery.getValue()));
+        Button stopStreamButton = new Button("Stop Stream", event -> stopStreamingChat());
+        HorizontalLayout generalChatButtons = new HorizontalLayout(sendSyncButton, startStreamButton, stopStreamButton);
+        add(generalQuery, generalChatButtons);
+
+        // --- Access Recommendation Section ---
+        add(new H2("Access Recommendation (New Joiner / Role Change)"));
+        add(new Paragraph("<i>Manually enter employee details for recommendation.</i>"));
+
+        recEmployeeId = new TextField("Employee ID (New Joiner):", "new001"); // Default value
+        recEmployeeName = new TextField("Employee Name:", "John Doe"); // Default value
+        recDepartment = new TextField("Department:", "Engineering");
+        recRole = new TextField("Role:", "Software Engineer");
+        recLineManagerId = new TextField("Line Manager ID:", "mgr001");
+
+        Button sendRecButton = new Button("Get Recommendation", event -> sendRecommendation());
+        add(recEmployeeId, recEmployeeName, recDepartment, recRole, recLineManagerId, sendRecButton);
+
+        // --- Access Anomaly Explanation Section ---
+        add(new H2("Access Anomaly Explanation"));
+        add(new Paragraph("<i>Manually enter employee ID.</i>"));
+        anomalyEmployeeId = new TextField("Employee ID:", "emp001"); // Default value
+        // anomalyEmployeeId.setReadOnly(true); // No longer read-only
+        Button sendAnomalyButton = new Button("Explain Anomaly", event -> sendAnomalyExplanation());
+        add(anomalyEmployeeId, sendAnomalyButton);
+
+        // --- Policy Drift Explanation Section ---
+        add(new H2("Policy Drift Explanation"));
+        driftGroupId = new TextField("Group ID:", "grp001");
+        driftBaselineDate = new TextField("Baseline Date (YYYY-MM-DD):", "2024-01-01");
+        Button sendDriftButton = new Button("Explain Policy Drift", event -> sendPolicyDriftExplanation());
+        add(driftGroupId, driftBaselineDate, sendDriftButton);
+
+        // --- Response Display Area ---
+        add(new H2("AI Response"));
+        responseDisplay = new TextArea();
+        responseDisplay.setReadOnly(true);
+        responseDisplay.setWidthFull();
+        responseDisplay.setHeight("300px");
+        add(responseDisplay);
+    }
+
+    private void setResponse(String text) {
+        ui.access(() -> responseDisplay.setValue(text));
+    }
+
+    private void appendResponse(String text) {
+        ui.access(() -> responseDisplay.setValue(responseDisplay.getValue() + text));
+    }
+
+    private void showLoading() {
+        setResponse("Loading...");
+    }
+
+    private void sendGeneralChat(String query) {
+        if (query.isEmpty()) {
+            Notification.show("Please enter a query.");
+            return;
+        }
+        showLoading();
+        clientService.generalChat(query)
+             .subscribeOn(Schedulers.boundedElastic()) // Run on a separate thread
+             .subscribe(
+                        this::setResponse,
+                        error -> ui.access(() -> Notification.show("Error: " + error.getMessage())) // Use ui.access for error notifications
+                );
+    }
+
+    private void startStreamingChat(String query) {
+        if (query.isEmpty()) {
+            Notification.show("Please enter a query for streaming.");
+            return;
+        }
+        setResponse(""); // Clear previous content
+        showLoading();
+
+        clientService.streamGeneralChat(query)
+             .subscribeOn(Schedulers.boundedElastic()) // Run on a separate thread
+             .doOnNext(this::appendResponse)
+             .doOnError(error -> ui.access(() -> { // Use ui.access for error notifications
+                   appendResponse("\n\n--- Stream ended with error: " + error.getMessage() + " ---");
+                   Notification.show("Streaming error: " + error.getMessage());
+               }))
+             .doOnComplete(() -> ui.access(() -> { // Use ui.access for completion notification
+                   appendResponse("\n\n--- Stream completed ---");
+                   Notification.show("Streaming completed.");
+               }))
+             .subscribe();
+    }
+
+    private void stopStreamingChat() {
+        // For Flux, stopping is typically handled by cancelling the subscription.
+        // In this simple UI, we don't store the subscription, so a refresh or new query
+        // would effectively stop the previous stream. For a more robust solution,
+        // you'd store the Disposable and call dispose() here.
+        Notification.show("Streaming stopped (new query or refresh will clear).");
+    }
+
+    private void sendRecommendation() {
+        String employeeId = recEmployeeId.getValue();
+        String employeeName = recEmployeeName.getValue();
+        String department = recDepartment.getValue();
+        String role = recRole.getValue();
+        String lineManagerId = recLineManagerId.getValue();
+
+        if (employeeId.isEmpty() |
+
+| employeeName.isEmpty() |
+| department.isEmpty() |
+| role.isEmpty() |
+| lineManagerId.isEmpty()) {
+            Notification.show("Please fill in all recommendation fields.");
+            return;
+        }
+
+        showLoading();
+        clientService.recommendAccess(employeeId, employeeName, department, role, lineManagerId)
+             .subscribeOn(Schedulers.boundedElastic())
+             .subscribe(
+                        rec -> ui.access(() -> { // Use ui.access for UI updates
+                            try {
+                                setResponse(objectMapper.writeValueAsString(rec));
+                            } catch (Exception e) {
+                                setResponse("Error formatting response: " + e.getMessage());
+                            }
+                        }),
+                        error -> ui.access(() -> Notification.show("Error: " + error.getMessage()))
+                );
+    }
+
+    private void sendAnomalyExplanation() {
+        String employeeId = anomalyEmployeeId.getValue();
+        if (employeeId.isEmpty()) {
+            Notification.show("Employee ID is required for anomaly explanation.");
+            return;
+        }
+        showLoading();
+        clientService.explainAnomaly(employeeId)
+             .subscribeOn(Schedulers.boundedElastic())
+             .subscribe(
+                        anomaly -> ui.access(() -> { // Use ui.access for UI updates
+                            try {
+                                setResponse(objectMapper.writeValueAsString(anomaly));
+                            } catch (Exception e) {
+                                setResponse("Error formatting response: " + e.getMessage());
+                            }
+                        }),
+                        error -> ui.access(() -> Notification.show("Error: " + error.getMessage()))
+                );
+    }
+
+    private void sendPolicyDriftExplanation() {
+        String groupId = driftGroupId.getValue();
+        String baselineDateStr = driftBaselineDate.getValue();
+        if (groupId.isEmpty() |
+
+| baselineDateStr.isEmpty()) {
+            Notification.show("Please enter Group ID and Baseline Date.");
+            return;
+        }
+        try {
+            LocalDate baselineDate = LocalDate.parse(baselineDateStr);
+            showLoading();
+            clientService.explainPolicyDrift(groupId, baselineDate)
+                 .subscribeOn(Schedulers.boundedElastic())
+                 .subscribe(
+                            drift -> ui.access(() -> { // Use ui.access for UI updates
+                                try {
+                                    setResponse(objectMapper.writeValueAsString(drift));
+                                } catch (Exception e) {
+                                    setResponse("Error formatting response: " + e.getMessage());
+                                }
+                            }),
+                            error -> ui.access(() -> Notification.show("Error: " + error.getMessage()))
+                    );
+        } catch (Exception e) {
+            Notification.show("Invalid date format. Please use YYYY-MM-DD.");
+        }
+    }
+}
