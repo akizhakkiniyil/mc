@@ -1,0 +1,84 @@
+package com.example.accessgovernance.controller;
+
+import com.example.accessgovernance.service.AccessGovernanceClientService;
+import com.example.accessgovernance.service.model.AccessRecommendation;
+import com.example.accessgovernance.service.model.AnomalyExplanation;
+import com.example.accessgovernance.service.model.PolicyDriftExplanation;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+
+import java.time.LocalDate;
+
+@RestController
+@RequestMapping("/access-ai-api") // Base path for API endpoints
+@RequiredArgsConstructor
+@Slf4j
+public class AccessGovernanceController {
+
+    private final AccessGovernanceClientService clientService;
+
+    // Removed /user-info endpoint as there is no Azure AD integration
+
+    /**
+     * General chat endpoint, can use tools for basic data retrieval (synchronous).
+     * Example: GET /access-ai-api/chat?query=What department is Alice Johnson in?
+     */
+    @GetMapping("/chat")
+    public String chat(@RequestParam String query) {
+        return clientService.generalChat(query);
+    }
+
+    /**
+     * General chat endpoint with streaming responses, can use tools for basic data retrieval.
+     * Example: GET /access-ai-api/stream-chat?query=Can you tell me everything about employee emp001?
+     */
+    @GetMapping(value = "/stream-chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamChat(@RequestParam String query) {
+        return clientService.streamGeneralChat(query);
+    }
+
+    /**
+     * Recommends group memberships for a new joiner or role change.
+     * All parameters must be provided by the client.
+     * Example: GET /access-ai-api/recommend-access?employeeId=new001&employeeName=John%20Doe&department=Engineering&role=Software%20Engineer&lineManagerId=mgr001
+     */
+    @GetMapping("/recommend-access")
+    public AccessRecommendation recommendAccess(
+            @RequestParam String employeeId, // Now directly from request param
+            @RequestParam String employeeName, // Now directly from request param
+            @RequestParam String department,
+            @RequestParam String role,
+            @RequestParam String lineManagerId) {
+
+        log.info("Requesting recommendation for {} ({})", employeeName, employeeId);
+        return clientService.recommendAccess(employeeId, employeeName, department, role, lineManagerId);
+    }
+
+    /**
+     * Explains a detected access anomaly for an employee.
+     * Employee ID must be provided by the client.
+     * Example: GET /access-ai-api/explain-anomaly?employeeId=emp001
+     */
+    @GetMapping("/explain-anomaly")
+    public AnomalyExplanation explainAnomaly(@RequestParam String employeeId) { // Now directly from request param
+        log.info("Requesting anomaly explanation for employee: {}", employeeId);
+        return clientService.explainAnomaly(employeeId);
+    }
+
+    /**
+     * Explains policy drift for a specific group.
+     * Example: GET /access-ai-api/explain-policy-drift?groupId=grp001&baselineDate=2024-01-01
+     */
+    @GetMapping("/explain-policy-drift")
+    public PolicyDriftExplanation explainPolicyDrift(
+            @RequestParam String groupId,
+            @RequestParam String baselineDate) {
+        return clientService.explainPolicyDrift(groupId, LocalDate.parse(baselineDate));
+    }
+}
