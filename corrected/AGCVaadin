@@ -17,6 +17,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility; // Keep this if you intend to use Lumo theme
 import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDate;
@@ -54,8 +55,8 @@ public class MainView extends VerticalLayout {
         setSizeFull();
         setPadding(true);
         setSpacing(true);
-        // Removed LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM as they are not defined without Lumo theme
-        // If you use Lumo theme, you can keep these.
+        // Using LumoUtility classes for styling. If Lumo theme is not used, these can be removed or replaced with custom CSS.
+        addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
 
         // --- No User Info & Logout without AAD ---
         add(new Paragraph("Welcome to the Access Governance AI Assistant!"));
@@ -89,7 +90,6 @@ public class MainView extends VerticalLayout {
         add(new H2("Access Anomaly Explanation"));
         add(new Paragraph("<i>Manually enter employee ID.</i>"));
         anomalyEmployeeId = new TextField("Employee ID:", "emp001"); // Default value
-        // anomalyEmployeeId.setReadOnly(true); // No longer read-only
         Button sendAnomalyButton = new Button("Explain Anomaly", event -> sendAnomalyExplanation());
         add(anomalyEmployeeId, sendAnomalyButton);
 
@@ -234,8 +234,7 @@ public class MainView extends VerticalLayout {
                  .subscribeOn(Schedulers.boundedElastic())
                  .subscribe(
                             drift -> ui.access(() -> { // Use ui.access for UI updates
-                                try {
-                                    setResponse(objectMapper.writeValueAsString(drift));
+                                try { |setResponse(objectMapper.writeValueAsString(drift));
                                 } catch (Exception e) {
                                     setResponse("Error formatting response: " + e.getMessage());
                                 }
